@@ -936,7 +936,7 @@ return buf.join("");
 };
 });
 
-;require.register("lib/view_collection", function(exports, require, module) {
+require.register("lib/view_collection", function(exports, require, module) {
 var BaseView, ViewCollection, _ref,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
@@ -1972,6 +1972,62 @@ module.exports = Notification = (function(_super) {
 })(BaseModel);
 });
 
+;require.register("models/photo", function(exports, require, module) {
+var Photo, client, _ref,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+client = require('../lib/client');
+
+module.exports = Photo = (function(_super) {
+  __extends(Photo, _super);
+
+  function Photo() {
+    _ref = Photo.__super__.constructor.apply(this, arguments);
+    return _ref;
+  }
+
+  Photo.prototype.defaults = function() {
+    return {
+      thumbsrc: 'img/loading.gif',
+      src: '',
+      orientation: 1
+    };
+  };
+
+  Photo.prototype.url = function() {
+    return Photo.__super__.url.apply(this, arguments) + app.urlKey;
+  };
+
+  Photo.prototype.parse = function(attrs) {
+    if (!attrs.id) {
+      return attrs;
+    } else {
+      return _.extend(attrs, {
+        thumbsrc: ("photos/thumbs/" + attrs.id + ".jpg") + app.urlKey,
+        src: ("photos/" + attrs.id + ".jpg") + app.urlKey,
+        orientation: attrs.orientation
+      });
+    }
+  };
+
+  Photo.prototype.getPrevSrc = function() {
+    return "photos/" + (this.get('id')) + ".jpg";
+  };
+
+  return Photo;
+
+})(Backbone.Model);
+
+Photo.listFromFiles = function(skip, limit, callback) {
+  return client.get("files/range/" + skip + "/" + limit, callback);
+};
+
+Photo.makeFromFile = function(fileid, attr, callback) {
+  return client.post("files/" + fileid + "/toPhoto", attr, callback);
+};
+});
+
 ;require.register("models/stack_application", function(exports, require, module) {
 var StackApplication, client, _ref,
   __hasProp = {}.hasOwnProperty,
@@ -2111,9 +2167,11 @@ module.exports = User = (function(_super) {
 });
 
 ;require.register("routers/main_router", function(exports, require, module) {
-var MainRouter, _ref,
+var MainRouter, ObjectPickerCroper, _ref,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+ObjectPickerCroper = require('../views/object-picker');
 
 module.exports = MainRouter = (function(_super) {
   __extends(MainRouter, _super);
@@ -2152,6 +2210,8 @@ module.exports = MainRouter = (function(_super) {
       switch (intent.action) {
         case 'goto':
           return _this.navigate("apps/" + intent.params, true);
+        case 'pickObject':
+          return _this.objectPicker(intent);
         default:
           return console.log("WEIRD INTENT", intent);
       }
@@ -2167,6 +2227,17 @@ module.exports = MainRouter = (function(_super) {
     }
     if (index !== 3) {
       return app.mainView.applicationListView.setMode('view');
+    }
+  };
+
+  MainRouter.prototype.objectPicker = function(intent) {
+    var _this = this;
+    switch (intent.objectType) {
+      case 'singlePhoto':
+        console.log("home : singlePhoto modal launched");
+        return new ObjectPickerCroper(function(newPhotoChosen, dataUrl) {
+          return console.log("home : singlePhoto modal closed");
+        });
     }
   };
 
@@ -2311,7 +2382,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/application_iframe", function(exports, require, module) {
+require.register("templates/application_iframe", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2325,7 +2396,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/config_application", function(exports, require, module) {
+require.register("templates/config_application", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2369,7 +2440,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/config_application_list", function(exports, require, module) {
+require.register("templates/config_application_list", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2380,7 +2451,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/config_applications", function(exports, require, module) {
+require.register("templates/config_applications", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2422,7 +2493,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/config_device", function(exports, require, module) {
+require.register("templates/config_device", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2440,7 +2511,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/config_device_list", function(exports, require, module) {
+require.register("templates/config_device_list", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2451,7 +2522,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/help", function(exports, require, module) {
+require.register("templates/help", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2481,7 +2552,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/help_url", function(exports, require, module) {
+require.register("templates/help_url", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2498,7 +2569,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/home", function(exports, require, module) {
+require.register("templates/home", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2522,7 +2593,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/home_application", function(exports, require, module) {
+require.register("templates/home_application", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2537,7 +2608,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/home_application_widget", function(exports, require, module) {
+require.register("templates/home_application_widget", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2551,7 +2622,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/layout", function(exports, require, module) {
+require.register("templates/layout", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2584,7 +2655,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/market", function(exports, require, module) {
+require.register("templates/market", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2608,7 +2679,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/market_application", function(exports, require, module) {
+require.register("templates/market_application", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2637,7 +2708,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/menu_application", function(exports, require, module) {
+require.register("templates/menu_application", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2651,7 +2722,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/menu_applications", function(exports, require, module) {
+require.register("templates/menu_applications", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2663,7 +2734,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/navbar", function(exports, require, module) {
+require.register("templates/navbar", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2678,7 +2749,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/navbar_app_btn", function(exports, require, module) {
+require.register("templates/navbar_app_btn", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2694,7 +2765,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/notification", function(exports, require, module) {
+require.register("templates/notification", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2706,7 +2777,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/notifications", function(exports, require, module) {
+require.register("templates/notifications", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2724,7 +2795,19 @@ return buf.join("");
 };
 });
 
-;require.register("templates/popover_description", function(exports, require, module) {
+require.register("templates/object-picker", function(exports, require, module) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
+var buf = [];
+with (locals || {}) {
+var interp;
+buf.push('<input id="uploader" type="file" style="display:none"/><div class="objectPickerCont"><nav role="tablist" aria-controls="objectPickerCont" class="fp-nav-tabs"><div role="tabMarginTop"></div><div><div role="tab" aria-controls="thumbPicker" aria-selected="true">photo</div><div role="tab" aria-controls="photoUpload" aria-selected="false">upload</div><div role="tab" aria-controls="urlPhotoUpload" aria-selected="false">url</div></div><div role="tabMarginBottom"></div></nav><section role="tabpanel" aria-hidden="false" class="thumbPicker"><div class="thumbsContainer"></div><a class="btn btn-cozy right next"><p>' + escape((interp = ('more thumbs')) == null ? '' : interp) + ' &nbsp;&#12297</p></a></section><section role="tabpanel" aria-hidden="true" class="photoUpload"><button class="modal-uploadBtn">' + escape((interp = ('ObjPicker upload btn')) == null ? '' : interp) + '</button><div class="modal-file-drop-zone"><p>' + escape((interp = ('drop a file')) == null ? '' : interp) + '</p><div></div></div></section><section role="tabpanel" aria-hidden="true" class="urlPhotoUpload"><div><div class="url-preview"></div></div><input placeholder="url" class="modal-url-input"/></section></div><div class="croperCont"><table><tbody><tr><td><img id="img-to-crop"/></td><td><div id="frame-img-preview"><img id="img-preview"/></div></td></tr></tbody></table><a class="chooseAgain">' + escape((interp = ('photo-modal chooseAgain')) == null ? '' : interp) + '</a></div>');
+}
+return buf.join("");
+};
+});
+
+require.register("templates/popover_description", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2754,7 +2837,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/popover_permissions", function(exports, require, module) {
+require.register("templates/popover_permissions", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2787,7 +2870,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/tutorial", function(exports, require, module) {
+require.register("templates/tutorial", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2862,7 +2945,7 @@ return buf.join("");
 };
 });
 
-;require.register("templates/update_stack_modal", function(exports, require, module) {
+require.register("templates/update_stack_modal", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
@@ -2889,7 +2972,7 @@ return buf.join("");
 };
 });
 
-;require.register("views/account", function(exports, require, module) {
+require.register("views/account", function(exports, require, module) {
 var BaseView, locales, request, timezones,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
@@ -5165,6 +5248,166 @@ module.exports = AppsMenu = (function(_super) {
 })(ViewCollection);
 });
 
+;require.register("views/modal", function(exports, require, module) {
+var Modal, _ref,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+Modal = (function(_super) {
+  __extends(Modal, _super);
+
+  function Modal() {
+    this.onKeyStroke = __bind(this.onKeyStroke, this);
+    _ref = Modal.__super__.constructor.apply(this, arguments);
+    return _ref;
+  }
+
+  Modal.prototype.id = 'modal-dialog';
+
+  Modal.prototype.className = 'modalCY fade';
+
+  Modal.prototype.attributes = {
+    'data-backdrop': "static",
+    'data-keyboard': "false"
+  };
+
+  Modal.prototype.initialize = function(options) {
+    var _this = this;
+    if (this.title == null) {
+      this.title = options.title;
+    }
+    if (this.content == null) {
+      this.content = options.content;
+    }
+    if (this.yes == null) {
+      this.yes = options.yes || 'ok';
+    }
+    if (this.no == null) {
+      this.no = options.no || 'cancel';
+    }
+    if (this.cb == null) {
+      this.cb = options.cb || function() {};
+    }
+    this.render();
+    if (options.cssSpaceName != null) {
+      this.el.classList.add(options.cssSpaceName);
+    }
+    this.saving = false;
+    this.$el.modal('show');
+    this.el.tabIndex = 0;
+    this.el.focus();
+    this.$('button.close').click(function(event) {
+      event.stopPropagation();
+      return _this.onNo();
+    });
+    return this.$el.on('keyup', this.onKeyStroke);
+  };
+
+  Modal.prototype.events = function() {
+    return {
+      "click #modal-dialog-no": 'onNo',
+      "click #modal-dialog-yes": 'onYes',
+      'click': 'onClickAnywhere'
+    };
+  };
+
+  Modal.prototype.onNo = function() {
+    this.close();
+    return this.cb(false);
+  };
+
+  Modal.prototype.onYes = function() {
+    this.close();
+    return this.cb(true);
+  };
+
+  Modal.prototype.close = function() {
+    var _this = this;
+    if (this.closing) {
+      return;
+    }
+    this.closing = true;
+    this.$el.modal('hide');
+    return setTimeout((function() {
+      return _this.remove();
+    }), 500);
+  };
+
+  Modal.prototype.onKeyStroke = function(e) {
+    e.stopPropagation();
+    if (e.which === 27) {
+      this.onNo();
+      return false;
+    }
+  };
+
+  Modal.prototype.remove = function() {
+    this.$el.off('keyup', this.onKeyStroke);
+    return Modal.__super__.remove.apply(this, arguments);
+  };
+
+  Modal.prototype.render = function() {
+    var body, close, foot, head, title, yesBtn;
+    close = $('<button class="close" type="button" data-dismiss="modal">×</button>');
+    title = $('<p>').text(this.title);
+    head = $('<div class="modalCY-header">').append(close, title);
+    body = $('<div class="modalCY-body"></div>').append(this.renderContent());
+    yesBtn = $('<button id="modal-dialog-yes" class="btn btn-cozy">').text(this.yes);
+    foot = $('<div class="modalCY-footer">').append(yesBtn);
+    if (this.no) {
+      foot.prepend($('<button id="modal-dialog-no" class="btn btn-link">').text(this.no));
+    }
+    return $("body").append(this.$el.append(head, body, foot));
+  };
+
+  Modal.prototype.renderContent = function() {
+    return this.content;
+  };
+
+  Modal.prototype.onClickAnywhere = function(event) {
+    if (event.target.id === this.id) {
+      return this.onNo();
+    }
+  };
+
+  return Modal;
+
+})(Backbone.View);
+
+Modal.alert = function(title, content, cb) {
+  return new Modal({
+    title: title,
+    content: content,
+    yes: 'ok',
+    no: null,
+    cb: cb
+  });
+};
+
+Modal.confirm = function(title, content, yesMsg, noMsg, cb) {
+  return new Modal({
+    title: title,
+    content: content,
+    yes: yesMsg,
+    no: noMsg,
+    cb: cb
+  });
+};
+
+Modal.error = function(text, cb) {
+  return new Modal({
+    title: t('modal error'),
+    content: text,
+    yes: t('modal ok'),
+    no: false,
+    cb: cb
+  });
+};
+
+module.exports = Modal;
+});
+
 ;require.register("views/navbar", function(exports, require, module) {
 var AppsMenu, BaseView, NavbarView, NotificationsView, appButtonTemplate,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
@@ -5405,6 +5648,691 @@ module.exports = NotificationsView = (function(_super) {
   return NotificationsView;
 
 })(ViewCollection);
+});
+
+;require.register("views/object-picker", function(exports, require, module) {
+var Modal, Photo, PhotoPickerCroper, template, _ref,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+Modal = require('./modal.coffee');
+
+Photo = require('../models/photo');
+
+template = require('../templates/object-picker')();
+
+module.exports = PhotoPickerCroper = (function(_super) {
+  __extends(PhotoPickerCroper, _super);
+
+  function PhotoPickerCroper() {
+    this.updateCropedPreview = __bind(this.updateCropedPreview, this);
+    this.onImgToCropLoaded = __bind(this.onImgToCropLoaded, this);
+    this.listFromFiles_cb = __bind(this.listFromFiles_cb, this);
+    this.photoUploadKeyHandler = __bind(this.photoUploadKeyHandler, this);
+    this.handleFile = __bind(this.handleFile, this);
+    this.handleUploaderChange = __bind(this.handleUploaderChange, this);
+    this.changePhotoFromUpload = __bind(this.changePhotoFromUpload, this);
+    this.handleScroll = __bind(this.handleScroll, this);
+    _ref = PhotoPickerCroper.__super__.constructor.apply(this, arguments);
+    return _ref;
+  }
+
+  PhotoPickerCroper.prototype.id = 'object-picker';
+
+  PhotoPickerCroper.prototype.title = 'pick from files';
+
+  PhotoPickerCroper.prototype.events = function() {
+    return _.extend(PhotoPickerCroper.__super__.events.apply(this, arguments), {
+      'click    .thumbsContainer': 'validateClick',
+      'dblclick .thumbsContainer': 'validateDblClick',
+      'click    a.next': 'displayMore',
+      'click    a.prev': 'displayPrevPage',
+      'click    .chooseAgain': 'chooseAgain',
+      'click    .modal-uploadBtn': 'changePhotoFromUpload',
+      'change   #uploader': 'handleUploaderChange'
+    });
+  };
+
+  PhotoPickerCroper.prototype.initialize = function(cb) {
+    var body;
+    this.config = {
+      cssSpaceName: "object-picker",
+      singleSelection: true,
+      numPerPage: 50,
+      yes: t('modal ok'),
+      no: t('modal cancel'),
+      cb: cb,
+      target_h: 100,
+      target_w: 100
+    };
+    PhotoPickerCroper.__super__.initialize.call(this, this.config);
+    this.state = {
+      currentStep: 'photoPicker',
+      selected: {},
+      selected_n: 0,
+      skip: 0,
+      percent: 0,
+      img_naturalW: 0,
+      img_naturalH: 0,
+      uploadPopupOpened: false
+    };
+    body = this.el.querySelector('.modalCY-body');
+    body.innerHTML = template;
+    this.body = body;
+    this.objectPickerCont = body.querySelector('.objectPickerCont');
+    this.tablist = body.querySelector('[role=tablist]');
+    this.cropper$ = this.el.querySelector('.croperCont');
+    this.thumbs$ = body.querySelector('.thumbsContainer');
+    this.imgToCrop = this.cropper$.querySelector('#img-to-crop');
+    this.imgPreview = this.cropper$.querySelector('#img-preview');
+    this.nextBtn = body.querySelector('.next');
+    this.uploader = body.querySelector('#uploader');
+    this.bindTabs();
+    this.listenTabsSelection();
+    this.selectDefaultTab('thumbPicker');
+    this.bindFileDropZone();
+    this.setupURL();
+    this.imgToCrop.addEventListener('load', this.onImgToCropLoaded, false);
+    this.cropper$.style.display = 'none';
+    this.addPage(0, this.config.numPerPage);
+    this.state.skip += this.config.numPerPage;
+    return true;
+  };
+
+  PhotoPickerCroper.prototype.test = function(e) {
+    return console.log(e.type, this);
+  };
+
+  PhotoPickerCroper.prototype.setupURL = function() {
+    var btn, img, imgTmp, input, preloadImage, urlRegexp;
+    img = this.body.querySelector('.url-preview');
+    btn = this.body.querySelector('.modal-url-input-btn');
+    input = this.body.querySelector('.modal-url-input');
+    urlRegexp = /\b(https?|ftp|file):\/\/[\-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i;
+    imgTmp = new Image();
+    imgTmp.onerror = function() {
+      return img.style.backgroundImage = "";
+    };
+    imgTmp.onload = function() {
+      img.style.maxWidth = imgTmp.naturalWidth + "px";
+      img.style.maxHeight = imgTmp.naturalHeight + "px";
+      img.parentElement.style.display = 'flex';
+      return img.style.backgroundImage = 'url(' + imgTmp.src + ')';
+    };
+    preloadImage = function(src) {
+      return imgTmp.src = src;
+    };
+    return input.addEventListener('input', function(e) {
+      var newurl;
+      newurl = input.value;
+      if (urlRegexp.test(newurl)) {
+        return preloadImage(newurl);
+      } else {
+        return img.style.backgroundImage = "";
+      }
+    }, false);
+  };
+
+  PhotoPickerCroper.prototype.bindFileDropZone = function() {
+    var dragenter, dragover, drop, dropbox, hasEnteredText, print,
+      _this = this;
+    dropbox = this.objectPickerCont.querySelector(".modal-file-drop-zone>div");
+    print = function(e) {
+      console.log(e.target);
+      return console.log(e.currentTarget);
+    };
+    hasEnteredText = false;
+    dropbox.addEventListener("dragenter", function(e) {
+      console.log('dragenter');
+      print(e);
+      e.stopPropagation();
+      e.preventDefault();
+      return dropbox.classList.add('dragging');
+    }, false);
+    dropbox.addEventListener("dragleave", function(e) {
+      console.log('dragleave ');
+      print(e);
+      e.stopPropagation();
+      e.preventDefault();
+      return dropbox.classList.remove('dragging');
+    }, false);
+    dragenter = function(e) {
+      e.stopPropagation();
+      return e.preventDefault();
+    };
+    dragover = dragenter;
+    drop = function(e) {
+      var dt, files;
+      e.stopPropagation();
+      e.preventDefault();
+      dt = e.dataTransfer;
+      files = dt.files;
+      return _this.handleFile(files[0]);
+    };
+    dropbox.addEventListener("dragover", dragover, false);
+    return dropbox.addEventListener("drop", drop, false);
+  };
+
+  PhotoPickerCroper.prototype.handleScroll = function(e) {
+    var b;
+    b = b + 3;
+    return console.log(this.target);
+  };
+
+  PhotoPickerCroper.prototype.validateDblClick = function(e) {
+    if (e.target.nodeName !== "IMG") {
+      return;
+    }
+    if (this.config.singleSelection) {
+      if (typeof this.state.selected[e.target.id] !== 'object') {
+        this.toggleClicked(e.target);
+      }
+      return this.showCropingTool();
+    } else {
+
+    }
+  };
+
+  PhotoPickerCroper.prototype.validateClick = function(e) {
+    var el;
+    el = e.target;
+    if (el.nodeName !== "IMG") {
+      return;
+    }
+    return this.toggleClicked(el);
+  };
+
+  PhotoPickerCroper.prototype.toggleClicked = function(el) {
+    var currentID, i, id, thumb, _ref1, _results;
+    id = el.id;
+    if (this.config.singleSelection) {
+      currentID = this.getSelectedID();
+      if (currentID === id) {
+        return;
+      }
+      this.toggleOne(el, id);
+      _ref1 = this.state.selected;
+      _results = [];
+      for (i in _ref1) {
+        thumb = _ref1[i];
+        if (i !== id) {
+          if (typeof thumb === 'object') {
+            $(thumb.el).removeClass('selected');
+            this.state.selected[i] = false;
+            _results.push(this.state.selected_n -= 1);
+          } else {
+            _results.push(void 0);
+          }
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
+    } else {
+      return this.toggleOne(el, id);
+    }
+  };
+
+  PhotoPickerCroper.prototype.selectFirstThumb = function() {
+    return this.toggleClicked(this.thumbs$.firstChild);
+  };
+
+  PhotoPickerCroper.prototype.selectNextThumb = function() {
+    var nextThumb, thumb;
+    thumb = this.getSelectedThumb();
+    if (thumb === null) {
+      return;
+    }
+    nextThumb = thumb.nextElementSibling;
+    if (nextThumb) {
+      return this.toggleClicked(nextThumb);
+    }
+  };
+
+  PhotoPickerCroper.prototype.selectPreviousThumb = function() {
+    var prevThumb, thumb;
+    thumb = this.getSelectedThumb();
+    if (thumb === null) {
+      return;
+    }
+    prevThumb = thumb.previousElementSibling;
+    if (prevThumb) {
+      return this.toggleClicked(prevThumb);
+    }
+  };
+
+  PhotoPickerCroper.prototype.selectThumbUp = function() {
+    var firstThumb, prevThumb, thumb, x;
+    thumb = this.getSelectedThumb();
+    if (thumb === null) {
+      return;
+    }
+    x = thumb.x;
+    prevThumb = thumb.previousElementSibling;
+    while (prevThumb) {
+      if (prevThumb.x === x) {
+        this.toggleClicked(prevThumb);
+        return;
+      }
+      prevThumb = prevThumb.previousElementSibling;
+    }
+    firstThumb = thumb.parentElement.firstChild;
+    if (firstThumb !== thumb) {
+      return this.toggleClicked(firstThumb);
+    }
+  };
+
+  PhotoPickerCroper.prototype.selectThumbDown = function() {
+    var lastThumb, nextThumb, thumb, x;
+    thumb = this.getSelectedThumb();
+    if (thumb === null) {
+      return;
+    }
+    x = thumb.x;
+    nextThumb = thumb.nextElementSibling;
+    while (nextThumb) {
+      if (nextThumb.x === x) {
+        this.toggleClicked(nextThumb);
+        return;
+      }
+      nextThumb = nextThumb.nextElementSibling;
+    }
+    lastThumb = thumb.parentElement.lastChild;
+    if (lastThumb !== thumb) {
+      return this.toggleClicked(lastThumb);
+    }
+  };
+
+  PhotoPickerCroper.prototype.toggleOne = function(thumbEl, id) {
+    if (typeof this.state.selected[id] === 'object') {
+      $(thumbEl).removeClass('selected');
+      this.state.selected[id] = false;
+      return this.state.selected_n -= 1;
+    } else {
+      $(thumbEl).addClass('selected');
+      this.state.selected[id] = {
+        id: id,
+        name: "",
+        el: thumbEl
+      };
+      return this.state.selected_n += 1;
+    }
+  };
+
+  PhotoPickerCroper.prototype.getSelectedID = function() {
+    var k, val, _ref1;
+    _ref1 = this.state.selected;
+    for (k in _ref1) {
+      val = _ref1[k];
+      if (typeof val === 'object') {
+        return k;
+      }
+    }
+    return null;
+  };
+
+  PhotoPickerCroper.prototype.getSelectedThumb = function() {
+    var k, val, _ref1;
+    _ref1 = this.state.selected;
+    for (k in _ref1) {
+      val = _ref1[k];
+      if (typeof val === 'object') {
+        return val.el;
+      }
+    }
+    return null;
+  };
+
+  PhotoPickerCroper.prototype.onYes = function() {
+    var d, r, s;
+    if (this.state.currentStep === 'photoPicker') {
+      if (this.state.selected_n === 1) {
+        return this.showCropingTool();
+      } else {
+        return false;
+      }
+    } else {
+      s = this.imgPreview.style;
+      r = this.state.img_naturalW / this.imgPreview.width;
+      d = {
+        sx: Math.round(-parseInt(s.marginLeft) * r),
+        sy: Math.round(-parseInt(s.marginTop) * r),
+        sWidth: Math.round(this.config.target_h * r),
+        sHeight: Math.round(this.config.target_w * r)
+      };
+      this.close();
+      return this.cb(true, this.getResultDataURL(this.imgPreview, d));
+    }
+  };
+
+  PhotoPickerCroper.prototype.changePhotoFromUpload = function() {
+    this.uploadPopupOpened = true;
+    this.uploader.click();
+    return console.log("fin changePhotoFromUpload");
+  };
+
+  PhotoPickerCroper.prototype.handleUploaderChange = function() {
+    var file;
+    console.log("fin changePhotoFromUpload");
+    file = this.uploader.files[0];
+    return handleFile(file);
+  };
+
+  PhotoPickerCroper.prototype.handleFile = function(file) {
+    var img, reader,
+      _this = this;
+    console.log("handleFile");
+    if (!file.type.match(/image\/.*/)) {
+      return alert(t('This is not an image'));
+    }
+    reader = new FileReader();
+    img = new Image();
+    reader.readAsDataURL(file);
+    return reader.onloadend = function() {
+      return _this.showCropingTool(reader.result);
+    };
+  };
+
+  PhotoPickerCroper.prototype.getResultDataURL = function(img, dimensions) {
+    var IMAGE_DIMENSION, canvas, ctx, d, dataUrl;
+    IMAGE_DIMENSION = 600;
+    canvas = document.createElement('canvas');
+    canvas.height = canvas.width = IMAGE_DIMENSION;
+    ctx = canvas.getContext('2d');
+    if (dimensions != null) {
+      d = dimensions;
+      ctx.drawImage(img, d.sx, d.sy, d.sWidth, d.sHeight, 0, 0, IMAGE_DIMENSION, IMAGE_DIMENSION);
+    }
+    return dataUrl = canvas.toDataURL('image/jpeg');
+  };
+
+  PhotoPickerCroper.prototype.onKeyStroke = function(e) {
+    console.log('onKeyStroke', e.which, this.sourceType);
+    if (this.state.currentStep === 'croper') {
+      if (e.which === 27) {
+        e.stopPropagation();
+        this.chooseAgain();
+      } else if (e.which === 13) {
+        e.stopPropagation();
+        this.onYes();
+        return;
+      } else {
+        return;
+      }
+    } else {
+      switch (this.sourceType) {
+        case 'thumbPicker':
+          if (this.thumbPickerKeyHandler(e)) {
+            PhotoPickerCroper.__super__.onKeyStroke.call(this, e);
+          }
+          break;
+        case 'photoUpload':
+          if (this.photoUploadKeyHandler(e)) {
+            PhotoPickerCroper.__super__.onKeyStroke.call(this, e);
+          }
+          break;
+        case 'urlPhotoUpload':
+          if (this.urlPhotoUploadKeyHandler(e)) {
+            PhotoPickerCroper.__super__.onKeyStroke.call(this, e);
+          }
+      }
+    }
+  };
+
+  PhotoPickerCroper.prototype.thumbPickerKeyHandler = function(e) {
+    console.log('thumbPickerKeyHandler', e.which);
+    switch (e.which) {
+      case 27:
+        return true;
+      case 13:
+        e.stopPropagation();
+        this.onYes();
+        break;
+      case 39:
+        e.stopPropagation();
+        this.selectNextThumb();
+        break;
+      case 37:
+        e.stopPropagation();
+        this.selectPreviousThumb();
+        break;
+      case 38:
+        e.stopPropagation();
+        this.selectThumbUp();
+        break;
+      case 40:
+        e.stopPropagation();
+        this.selectThumbDown();
+        break;
+      default:
+        return false;
+    }
+    return false;
+  };
+
+  PhotoPickerCroper.prototype.photoUploadKeyHandler = function(e) {
+    console.log('photoUploadKeyHandler', e.which);
+    switch (e.which) {
+      case 27:
+        if (this.uploadPopupOpened) {
+          this.uploadPopupOpened = false;
+          e.stopPropagation();
+        } else {
+          return true;
+        }
+        break;
+      default:
+        return false;
+    }
+    return false;
+  };
+
+  PhotoPickerCroper.prototype.urlPhotoUploadKeyHandler = function(e) {
+    console.log('urlPhotoUploadKeyHandler', e.which);
+    switch (e.which) {
+      case 27:
+        return true;
+      case 13:
+        e.stopPropagation();
+        this.onYes();
+        break;
+      default:
+        return false;
+    }
+    return false;
+  };
+
+  PhotoPickerCroper.prototype.addPage = function(skip, limit) {
+    return Photo.listFromFiles(skip, limit, this.listFromFiles_cb);
+  };
+
+  PhotoPickerCroper.prototype.listFromFiles_cb = function(err, body) {
+    var files, hasNext, pathToSocketIO, socket,
+      _this = this;
+    if ((body != null ? body.files : void 0) != null) {
+      files = body.files;
+    }
+    if (err) {
+      return console.log(err);
+    } else if (body.percent != null) {
+      this.state.percent = body.percent;
+      pathToSocketIO = "" + (window.location.pathname.substring(1)) + "socket.io";
+      socket = io.connect(window.location.origin, {
+        resource: pathToSocketIO
+      });
+      return socket.on('progress', function(event) {
+        _this.state.percent = event.percent;
+        if (_this.state.percent === 100) {
+
+        } else {
+
+        }
+      });
+    } else if ((files != null) && Object.keys(files).length === 0) {
+      return this.thumbs$.innerHTML = "<p>" + (t('no image')) + "</p>";
+    } else {
+      if ((body != null ? body.hasNext : void 0) != null) {
+        hasNext = body.hasNext;
+      } else {
+        hasNext = false;
+      }
+      this.addThumbs(body.files, hasNext);
+      if (this.config.singleSelection && this.state.selected_n === 0) {
+        return this.selectFirstThumb();
+      }
+    }
+  };
+
+  PhotoPickerCroper.prototype.addThumbs = function(files, hasNext) {
+    var frag, img, p, s, _i, _len;
+    if (!hasNext) {
+      this.nextBtn.style.display = 'none';
+    }
+    frag = document.createDocumentFragment();
+    s = '';
+    for (_i = 0, _len = files.length; _i < _len; _i++) {
+      p = files[_i];
+      img = new Image();
+      img.src = "files/thumbs/" + p.id + ".jpg";
+      img.id = "" + p.id;
+      img.title = "" + p.name;
+      frag.appendChild(img);
+    }
+    return this.thumbs$.appendChild(frag);
+  };
+
+  PhotoPickerCroper.prototype.displayMore = function() {
+    this.addPage(this.state.skip, this.config.numPerPage);
+    return this.state.skip += this.config.numPerPage;
+  };
+
+  PhotoPickerCroper.prototype.showCropingTool = function(dataUrl) {
+    var screenUrl;
+    this.state.currentStep = 'croper';
+    this.currentPhotoScroll = this.body.scrollTop;
+    this.objectPickerCont.style.display = 'none';
+    this.cropper$.style.display = '';
+    if (dataUrl) {
+      screenUrl = dataUrl;
+    } else {
+      screenUrl = "files/screens/" + (this.getSelectedID()) + ".jpg";
+    }
+    this.imgToCrop.src = screenUrl;
+    return this.imgPreview.src = screenUrl;
+  };
+
+  PhotoPickerCroper.prototype.onImgToCropLoaded = function() {
+    var img_h, img_w, options, selection_w, t, x, y;
+    img_w = this.imgToCrop.width;
+    img_h = this.imgToCrop.height;
+    this.img_w = img_w;
+    this.img_h = img_h;
+    this.state.img_naturalW = this.imgToCrop.naturalWidth;
+    this.state.img_naturalH = this.imgToCrop.naturalHeight;
+    selection_w = Math.round(Math.min(img_h, img_w) * 1);
+    x = Math.round((img_w - selection_w) / 2);
+    y = Math.round((img_h - selection_w) / 2);
+    options = {
+      onChange: this.updateCropedPreview,
+      onSelect: this.updateCropedPreview,
+      aspectRatio: 1,
+      setSelect: [x, y, x + selection_w, y + selection_w]
+    };
+    t = this;
+    $(this.imgToCrop).Jcrop(options, function() {
+      return t.jcrop_api = this;
+    });
+    return t.jcrop_api.focus();
+  };
+
+  PhotoPickerCroper.prototype.updateCropedPreview = function(coords) {
+    var prev_h, prev_w, prev_x, prev_y, s;
+    prev_w = this.img_w / coords.w * this.config.target_w;
+    prev_h = this.img_h / coords.h * this.config.target_h;
+    prev_x = this.config.target_w / coords.w * coords.x;
+    prev_y = this.config.target_h / coords.h * coords.y;
+    s = this.imgPreview.style;
+    s.width = Math.round(prev_w) + 'px';
+    s.height = Math.round(prev_h) + 'px';
+    s.marginLeft = '-' + Math.round(prev_x) + 'px';
+    s.marginTop = '-' + Math.round(prev_y) + 'px';
+    return true;
+  };
+
+  PhotoPickerCroper.prototype.chooseAgain = function() {
+    this.state.currentStep = 'photoPicker';
+    this.jcrop_api.destroy();
+    this.imgToCrop.removeAttribute('style');
+    this.imgToCrop.src = '';
+    this.objectPickerCont.style.display = '';
+    this.cropper$.style.display = 'none';
+    return this.body.scrollTop = this.currentPhotoScroll;
+  };
+
+  PhotoPickerCroper.prototype.bindTabs = function() {
+    var tablists;
+    tablists = document.querySelectorAll('[role=tablist]');
+    return Array.prototype.forEach.call(tablists, function(tablist) {
+      var panelList,
+        _this = this;
+      panelList = tablist.getAttribute('aria-controls');
+      panelList = document.querySelector("." + panelList);
+      return tablist.addEventListener('click', function(event) {
+        var pan, panel, panelSelect, tab, _i, _j, _len, _len1, _ref1, _ref2, _results;
+        if (event.target.getAttribute('role') !== 'tab') {
+          return;
+        }
+        panel = event.target.getAttribute('aria-controls');
+        panel = panelList.querySelector("." + panel);
+        _ref1 = panelList.children;
+        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+          pan = _ref1[_i];
+          if (pan.getAttribute('role') !== 'tabpanel') {
+            continue;
+          }
+          if (pan !== panel) {
+            pan.setAttribute('aria-hidden', true);
+          } else {
+            pan.setAttribute('aria-hidden', false);
+            panelSelect = document.createEvent('CustomEvent');
+            panelSelect.initCustomEvent('panelSelect', true, false);
+            pan.dispatchEvent(panelSelect);
+          }
+        }
+        _ref2 = tablist.querySelectorAll('[role=tab]');
+        _results = [];
+        for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+          tab = _ref2[_j];
+          if (tab === event.target) {
+            _results.push(event.target.setAttribute('aria-selected', true));
+          } else {
+            _results.push(tab.setAttribute('aria-selected', false));
+          }
+        }
+        return _results;
+      });
+    });
+  };
+
+  PhotoPickerCroper.prototype.listenTabsSelection = function() {
+    var _this = this;
+    return this.objectPickerCont.addEventListener('panelSelect', function(event) {
+      return _this.activateSourceType(event.target.className);
+    });
+  };
+
+  PhotoPickerCroper.prototype.selectDefaultTab = function(panelClassName) {
+    return this.tablist.querySelector("[aria-controls=" + panelClassName + "]").click();
+  };
+
+  PhotoPickerCroper.prototype.activateSourceType = function(sourceType) {
+    return this.sourceType = sourceType;
+  };
+
+  return PhotoPickerCroper;
+
+})(Modal);
 });
 
 ;require.register("views/popover_description", function(exports, require, module) {

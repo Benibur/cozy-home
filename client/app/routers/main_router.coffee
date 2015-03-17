@@ -1,3 +1,5 @@
+ObjectPickerCroper = require '../views/object-picker'
+
 module.exports = class MainRouter extends Backbone.Router
 
     routes :
@@ -24,6 +26,7 @@ module.exports = class MainRouter extends Backbone.Router
             intent = event.data
             switch intent.action
                 when 'goto' then @navigate "apps/#{intent.params}", true
+                when 'pickObject' then @objectPicker(intent)
                 else console.log "WEIRD INTENT", intent
 
     selectIcon: (index) ->
@@ -36,6 +39,16 @@ module.exports = class MainRouter extends Backbone.Router
         # dirty trick to prevent the custom menu to stay when doing:
         # custom view => random view => display application list
         app.mainView.applicationListView.setMode 'view' if index isnt 3
+
+    objectPicker : (intent)->
+        switch intent.objectType
+            when 'singlePhoto'
+                console.log "home : singlePhoto modal launched"
+                new   ObjectPickerCroper (newPhotoChosen, dataUrl)=>
+                    console.log "home : singlePhoto modal closed"
+                    # if newPhotoChosen
+                    #     # @changePhoto(img, dimensions)
+                    #     @changePhoto(dataUrl)
 
     ## Route behaviors
 
