@@ -26,7 +26,10 @@ module.exports = class MainRouter extends Backbone.Router
             intent = event.data
             switch intent.action
                 when 'goto' then @navigate "apps/#{intent.params}", true
-                when 'pickObject' then @objectPicker(intent)
+                # when 'pickObject' then @objectPicker(intent)
+                when undefined
+                    if JSON.parse(intent).type != 'application/x-talkerjs-v1+json'
+                        console.log "WEIRD INTENT", intent
                 else console.log "WEIRD INTENT", intent
 
     selectIcon: (index) ->

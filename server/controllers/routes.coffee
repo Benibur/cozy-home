@@ -1,11 +1,16 @@
-monitor = require './monitor'
-account = require './account'
-applications = require './applications'
+monitor           = require './monitor'
+account           = require './account'
+applications      = require './applications'
 stackApplications = require './stack_application'
-devices = require './devices'
-notifications = require './notifications'
+devices           = require './devices'
+notifications     = require './notifications'
+file              = require './file'
 
 module.exports =
+
+    'fileid':
+        param: file.fetch
+
     'slug': param: applications.loadApplication
 
     'api/applications/getPermissions': post: applications.getPermissions
@@ -58,3 +63,10 @@ module.exports =
     'notifications/:app/:ref':
         put: notifications.updateOrCreate
         delete: notifications.destroy
+
+    'files/range/:skip/:limit':
+        get: file.list
+    'files/thumbs/:fileid':
+        get: file.thumb
+    'files/screens/:fileid':
+        get: file.screen

@@ -82,9 +82,11 @@
 
   .next
     margin-top:10px
+    margin-right:10px
     margin-bottom:10px
     width:30%
     min-width:40px
+    max-width:150px
 
   .modal-uploadBtn
     width:250px
@@ -92,8 +94,6 @@
     margin-top:1em
     margin-left:auto
     margin-right:auto
-
-    // margin:auto
 
   .modal-file-drop-zone
     flex-grow:1
@@ -161,10 +161,17 @@
     flex-grow   :0
     align-self  : center
     width     :93%
-    max-width :45em
+    max-width :40em
     height    :1.8em
     margin-bottom:0
     padding-left:0.4em
+    border-color:#34a6ff
+    background:transparent
+    font-size:1.2em
+
+  .modal-url-input:hover
+    border-color:#fe8800
+
 
   #img-to-crop
     display: block
@@ -188,3 +195,5 @@
     justify-content:center
     table
       flex-shrink:1
+    a.chooseAgain
+      cursor:pointer

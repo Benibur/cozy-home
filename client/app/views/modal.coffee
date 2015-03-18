@@ -16,7 +16,6 @@ class Modal extends Backbone.View
         if options.cssSpaceName?
             @el.classList.add(options.cssSpaceName)
         @saving = false
-        @$el.modal 'show'
         @el.tabIndex = 0
         @el.focus()
 
@@ -44,8 +43,10 @@ class Modal extends Backbone.View
     close: ->
         return if @closing
         @closing = true
-        @$el.modal 'hide'
-        setTimeout (=> @remove()), 500
+        @backdrop.parentElement.removeChild(@backdrop)
+        @el.classList.remove('in')
+        @el.classList.add('out')
+        setTimeout( (=> @remove()), 500 )
 
     onKeyStroke: (e) =>
         e.stopPropagation()
@@ -65,10 +66,16 @@ class Modal extends Backbone.View
         yesBtn= $('<button id="modal-dialog-yes" class="btn btn-cozy">').text @yes
         foot  = $('<div class="modalCY-footer">').append yesBtn
         foot.prepend $('<button id="modal-dialog-no" class="btn btn-link">').text(@no) if @no
+        @backdrop = document.createElement('div')
+        @backdrop.classList.add('modalCY-backdrop')
 
-        # container = $('<div class="modalCY-content">').append head, body, foot
-        # container = $('<div class="modal-dialog">').append container
+        $("body").append(@backdrop)
         $("body").append @$el.append head, body, foot
+        # force the evaluation of the initial value of the CSS properties so
+        # that the transition is applied on them
+        window.getComputedStyle(@el).opacity
+        window.getComputedStyle(@el).top
+        @$el.addClass('in')
 
     renderContent: -> @content
 

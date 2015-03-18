@@ -50,6 +50,36 @@
 }
 
 
+/* jquery.Jcrop.min.css v0.9.12 (build:20130126) */
+.jcrop-holder{direction:ltr;text-align:left;}
+.jcrop-vline,.jcrop-hline{background:#FFF url(Jcrop.gif);font-size:0;position:absolute;}
+.jcrop-vline{height:100%;width:1px!important;}
+.jcrop-vline.right{right:0;}
+.jcrop-hline{height:1px!important;width:100%;}
+.jcrop-hline.bottom{bottom:0;}
+.jcrop-tracker{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;height:100%;width:100%;}
+.jcrop-handle{background-color:#333;border:1px #EEE solid;font-size:1px;height:7px;width:7px;}
+.jcrop-handle.ord-n{left:50%;margin-left:-4px;margin-top:-4px;top:0;}
+.jcrop-handle.ord-s{bottom:0;left:50%;margin-bottom:-4px;margin-left:-4px;}
+.jcrop-handle.ord-e{margin-right:-4px;margin-top:-4px;right:0;top:50%;}
+.jcrop-handle.ord-w{left:0;margin-left:-4px;margin-top:-4px;top:50%;}
+.jcrop-handle.ord-nw{left:0;margin-left:-4px;margin-top:-4px;top:0;}
+.jcrop-handle.ord-ne{margin-right:-4px;margin-top:-4px;right:0;top:0;}
+.jcrop-handle.ord-se{bottom:0;margin-bottom:-4px;margin-right:-4px;right:0;}
+.jcrop-handle.ord-sw{bottom:0;left:0;margin-bottom:-4px;margin-left:-4px;}
+.jcrop-dragbar.ord-n,.jcrop-dragbar.ord-s{height:7px;width:100%;}
+.jcrop-dragbar.ord-e,.jcrop-dragbar.ord-w{height:100%;width:7px;}
+.jcrop-dragbar.ord-n{margin-top:-4px;}
+.jcrop-dragbar.ord-s{bottom:0;margin-bottom:-4px;}
+.jcrop-dragbar.ord-e{margin-right:-4px;right:0;}
+.jcrop-dragbar.ord-w{margin-left:-4px;}
+.jcrop-light .jcrop-vline,.jcrop-light .jcrop-hline{background:#FFF;filter:alpha(opacity=70)!important;opacity:.70!important;}
+.jcrop-light .jcrop-handle{-moz-border-radius:3px;-webkit-border-radius:3px;background-color:#000;border-color:#FFF;border-radius:3px;}
+.jcrop-dark .jcrop-vline,.jcrop-dark .jcrop-hline{background:#000;filter:alpha(opacity=70)!important;opacity:.7!important;}
+.jcrop-dark .jcrop-handle{-moz-border-radius:3px;-webkit-border-radius:3px;background-color:#FFF;border-color:#000;border-radius:3px;}
+.solid-line .jcrop-vline,.solid-line .jcrop-hline{background:#FFF;}
+.jcrop-holder img,img.jcrop-preview{max-width:none;}
+
 /*! gridster.js - v0.1.0 - 2013-06-14
 * http://gridster.net/
 * Copyright (c) 2013 ducksboard; Licensed MIT */
@@ -2752,17 +2782,40 @@ button.btn {
   margin-right: 4px;
 }
 
+.modalCY-backdrop {
+  position: fixed;
+  top: -50px;
+  right: -50px;
+  bottom: -50px;
+  left: -50px;
+  background-color: #000;
+  z-index: 100000;
+  opacity: 0.85;
+}
+.fade {
+  opacity: 0;
+  top: -50%;
+}
+.fade.in {
+  opacity: 1;
+  top: 50%;
+  transition: opacity 0.15s linear, top 0.15s ease-out;
+}
+.fade.out {
+  opacity: 0;
+  top: -25%;
+  transition: opacity 0.15s linear, top 0.15s ease-out;
+}
 .modalCY {
   display: flex;
   flex-direction: column;
   position: absolute;
-  top: 25%;
   left: 50%;
   transform: translateX(-50%) translateY(-50%);
   height: 80%;
   width: 90%;
-  max-width: 100em;
-  z-index: 100000;
+  max-width: 85em;
+  z-index: 100001;
   overflow: hidden;
   background-color: #fff;
   border-radius: 3px;
@@ -2772,15 +2825,26 @@ button.btn {
   background-color: #fff;
   color: #333;
   border-bottom: 1px solid #eee;
-  font-family: styled;
   color: #333;
-  font-size: 1.7em;
+  font-size: 1.4em;
   padding: 20px;
   border-top-left-radius: 3px;
   border-top-right-radius: 3px;
 }
 .modalCY .modalCY-header p {
   margin: 0;
+}
+.modalCY button.close {
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  -webkit-appearance: none;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 20px;
+  color: #000;
+  opacity: 0.3;
 }
 .modalCY .modalCY-body {
   overflow: hidden;
@@ -2794,12 +2858,6 @@ button.btn {
   background-color: #f5f5f5;
   text-align: right;
   padding: 14px 15px 15px;
-}
-.modalCY.fade {
-  transition: opacity 0.3s linear, top 0.3s ease-out;
-}
-.modalCY.fade.in {
-  top: 50%;
 }
 @media (max-height: 38em) {
   .modalCY {
@@ -2899,9 +2957,11 @@ button.btn {
 }
 .object-picker .next {
   margin-top: 10px;
+  margin-right: 10px;
   margin-bottom: 10px;
   width: 30%;
   min-width: 40px;
+  max-width: 150px;
 }
 .object-picker .modal-uploadBtn {
   width: 250px;
@@ -2975,10 +3035,16 @@ button.btn {
   flex-grow: 0;
   align-self: center;
   width: 93%;
-  max-width: 45em;
+  max-width: 40em;
   height: 1.8em;
   margin-bottom: 0;
   padding-left: 0.4em;
+  border-color: #34a6ff;
+  background: transparent;
+  font-size: 1.2em;
+}
+.object-picker .modal-url-input:hover {
+  border-color: #fe8800;
 }
 .object-picker #img-to-crop {
   display: block;
@@ -3003,6 +3069,9 @@ button.btn {
 }
 .object-picker .croperCont table {
   flex-shrink: 1;
+}
+.object-picker .croperCont a.chooseAgain {
+  cursor: pointer;
 }
 
 

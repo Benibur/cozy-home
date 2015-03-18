@@ -1,34 +1,68 @@
 radius = 3px
 
+.modalCY-backdrop
+    position         : fixed
+    top              : -50px
+    right            : -50px
+    bottom           : -50px
+    left             : -50px
+    background-color : #000000
+    z-index          : 100000
+    opacity          : 0.85
+
+.fade
+    opacity: 0
+    top:-50%
+
+.fade.in
+    opacity    : 1
+    top:50%
+    transition : opacity 0.15s linear, top 0.15s ease-out
+
+.fade.out
+    opacity    : 0
+    top:-25%
+    transition : opacity 0.15s linear, top 0.15s ease-out
+
 .modalCY
-    display:flex
-    flex-direction:column
-    position:absolute
-    top:25%
-    left:50%
-    transform: translateX(-50%) translateY(-50%)
-    height:80%
-    width:90%
-    max-width:100em
-    z-index:100000
-    overflow:hidden
-    background-color:white
-    border-radius: radius
+    display          :flex
+    flex-direction   :column
+    position         :absolute
+    left             :50%
+    transform        : translateX(-50%) translateY(-50%)
+    height           :80%
+    width            :90%
+    max-width        :85em
+    z-index          :100001
+    overflow         :hidden
+    background-color :white
+    border-radius    :radius
 
     .modalCY-header
         flex-shrink:0
         background-color:white
         color: #333333
         border-bottom: 1px solid #eee
-        font-family: styled
         color: #333
-        font-size: 1.7em;
+        font-size: 1.4em;
         padding: 20px;
         border-top-left-radius: radius
         border-top-right-radius: radius
 
         p
             margin:0
+
+    button.close
+        padding            : 0
+        cursor             : pointer
+        background         : transparent
+        border             : 0
+        -webkit-appearance : none
+        font-size   : 20px
+        font-weight : bold
+        line-height : 20px
+        color       : #000000;
+        opacity: 0.3
 
     .modalCY-body
         overflow:hidden
@@ -43,11 +77,11 @@ radius = 3px
         text-align: right
         padding: 14px 15px 15px
 
-.modalCY.fade
-    transition:opacity 0.3s linear, top 0.3s ease-out
+// .modalCY.fade
+//     transition:opacity 0.3s linear, top 0.3s ease-out
 
-.modalCY.fade.in
-    top:50%
+// .modalCY.fade.in
+//     top:50%
 
 @media (max-height: 38em)
     .modalCY

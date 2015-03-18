@@ -651,6 +651,45 @@ exports.del = function(url, callbacks) {
 };
 });
 
+;require.register("lib/intentManager", function(exports, require, module) {
+var IntentManager, ObjectPicker,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+ObjectPicker = require('views/object-picker');
+
+module.exports = IntentManager = (function() {
+  function IntentManager() {
+    this.handleIntent = __bind(this.handleIntent, this);
+  }
+
+  IntentManager.prototype.registerIframe = function(iframe, remoteOrigin) {
+    var talker;
+    talker = new Talker(iframe.contentWindow, remoteOrigin);
+    return talker.onMessage = this.handleIntent;
+  };
+
+  IntentManager.prototype.handleIntent = function(message) {
+    var intent;
+    console.log("HOME / IntentManager, received message ", message);
+    intent = message.data;
+    switch (intent.type) {
+      case 'goto':
+        return window.app.routers.main.navigate("apps/" + intent.params, true);
+      case 'pickObject':
+        return new ObjectPicker(intent.params, function(newPhotoChosen, dataUrl) {
+          return message.respond({
+            newPhotoChosen: newPhotoChosen,
+            dataUrl: dataUrl
+          });
+        });
+    }
+  };
+
+  return IntentManager;
+
+})();
+});
+
 ;require.register("lib/request", function(exports, require, module) {
 exports.request = function(type, url, data, callback) {
   return $.ajax({
@@ -1372,7 +1411,14 @@ module.exports = {
     'sync title': "Get in Sync",
     'sync content': "<p>To get more information about syncing, you can take a look at the following resources:</p>\n<ul>\n    <li><a href=\"http://cozy.io/mobile/files.html\">Sync Files</a></li>\n    <li><a href=\"http://cozy.io/mobile/calendar.html\">Sync Calendar</a></li>\n    <li><a href=\"http://cozy.io/mobile/contacts.html\">Sync Contacts</a></li>\n</ul>",
     'close wizard': "Now I'm ready to use my Cozy"
-  }
+  },
+  "pick from files": "Choose one photo",
+  "photo-modal chooseAgain": "Choose another photo",
+  "modal ok": "OK",
+  "modal cancel": "Cancel",
+  "no image": "There is no image on your Cozy",
+  "ObjPicker upload btn": "Upload a local file",
+  "drop a file": "Drag & drop a file"
 };
 });
 
@@ -1583,7 +1629,15 @@ module.exports = {
     'sync title': "Synchronisation",
     'sync content': "<p>Pour obtenir des informations sur la synchronisation de vos périphériques, nous vous conseillons les ressources suivantes :</p>\n<ul>\n    <li><a href=\"http://cozy.io/mobile/files.html\">Sync Fichiers</a></li>\n    <li><a href=\"http://cozy.io/mobile/calendar.html\">Sync Calendrier</a></li>\n    <li><a href=\"http://cozy.io/mobile/contacts.html\">Sync Contacts</a></li>\n</ul>",
     'close wizard': "Je suis prêt à utiliser mon Cozy"
-  }
+  },
+  "pick from files": "Choisir une photo",
+  "photo-modal chooseAgain": "Changer de photo",
+  "modal ok": "OK",
+  "modal cancel": "Annuler",
+  "no image": "Il n'y a pas d'image sur votre Cozy",
+  "ObjPicker upload btn": "Sélectionnez un fichier local",
+  "more thumbs": "Plus de photo",
+  "drop a file": "Glissez et déposez un fichier"
 };
 });
 
@@ -2210,8 +2264,11 @@ module.exports = MainRouter = (function(_super) {
       switch (intent.action) {
         case 'goto':
           return _this.navigate("apps/" + intent.params, true);
-        case 'pickObject':
-          return _this.objectPicker(intent);
+        case void 0:
+          if (JSON.parse(intent).type !== 'application/x-talkerjs-v1+json') {
+            return console.log("WEIRD INTENT", intent);
+          }
+          break;
         default:
           return console.log("WEIRD INTENT", intent);
       }
@@ -4494,7 +4551,7 @@ module.exports = InstallWizardView = (function(_super) {
 });
 
 ;require.register("views/main", function(exports, require, module) {
-var AccountView, AppCollection, ApplicationsListView, BaseView, ConfigApplicationsView, DeviceCollection, HelpView, HomeView, MarketView, NavbarView, NotificationCollection, SocketListener, StackAppCollection, User, appIframeTemplate,
+var AccountView, AppCollection, ApplicationsListView, BaseView, ConfigApplicationsView, DeviceCollection, HelpView, HomeView, IntentManager, MarketView, NavbarView, NotificationCollection, SocketListener, StackAppCollection, User, appIframeTemplate,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -4528,6 +4585,8 @@ SocketListener = require('lib/socket_listener');
 
 User = require('models/user');
 
+IntentManager = require('lib/intentManager');
+
 module.exports = HomeView = (function(_super) {
   __extends(HomeView, _super);
 
@@ -4554,6 +4613,7 @@ module.exports = HomeView = (function(_super) {
     this.stackApps = new StackAppCollection();
     this.devices = new DeviceCollection();
     this.notifications = new NotificationCollection();
+    this.intentManager = new IntentManager();
     SocketListener.watch(this.apps);
     SocketListener.watch(this.notifications);
     SocketListener.watch(this.devices);
@@ -4752,7 +4812,7 @@ module.exports = HomeView = (function(_super) {
   };
 
   HomeView.prototype.createApplicationIframe = function(slug, hash) {
-    var frame,
+    var iframe, iframe$, iframeHTML,
       _this = this;
     if (hash == null) {
       hash = "";
@@ -4760,19 +4820,21 @@ module.exports = HomeView = (function(_super) {
     if ((hash != null ? hash.length : void 0) > 0) {
       hash = "#" + hash;
     }
-    this.frames.append(appIframeTemplate({
+    iframeHTML = appIframeTemplate({
       id: slug,
       hash: hash
-    }));
-    frame = this.$("#" + slug + "-frame");
-    $(frame.prop('contentWindow')).on('hashchange', function() {
+    });
+    iframe = this.frames.append(iframeHTML)[0].lastChild;
+    iframe$ = $(iframe);
+    iframe$.prop('contentWindow').addEventListener('hashchange', function() {
       var location, newhash;
-      location = frame.prop('contentWindow').location;
+      location = iframe$.prop('contentWindow').location;
       newhash = location.hash.replace('#', '');
       return _this.onAppHashChanged(slug, newhash);
     });
     this.resetLayoutSizes();
-    return frame;
+    this.intentManager.registerIframe(iframe, '*');
+    return iframe$;
   };
 
   HomeView.prototype.onAppHashChanged = function(slug, newhash) {
@@ -5294,7 +5356,6 @@ Modal = (function(_super) {
       this.el.classList.add(options.cssSpaceName);
     }
     this.saving = false;
-    this.$el.modal('show');
     this.el.tabIndex = 0;
     this.el.focus();
     this.$('button.close').click(function(event) {
@@ -5328,7 +5389,9 @@ Modal = (function(_super) {
       return;
     }
     this.closing = true;
-    this.$el.modal('hide');
+    this.backdrop.parentElement.removeChild(this.backdrop);
+    this.el.classList.remove('in');
+    this.el.classList.add('out');
     return setTimeout((function() {
       return _this.remove();
     }), 500);
@@ -5358,7 +5421,13 @@ Modal = (function(_super) {
     if (this.no) {
       foot.prepend($('<button id="modal-dialog-no" class="btn btn-link">').text(this.no));
     }
-    return $("body").append(this.$el.append(head, body, foot));
+    this.backdrop = document.createElement('div');
+    this.backdrop.classList.add('modalCY-backdrop');
+    $("body").append(this.backdrop);
+    $("body").append(this.$el.append(head, body, foot));
+    window.getComputedStyle(this.el).opacity;
+    window.getComputedStyle(this.el).top;
+    return this.$el.addClass('in');
   };
 
   Modal.prototype.renderContent = function() {
@@ -5656,7 +5725,7 @@ var Modal, Photo, PhotoPickerCroper, template, _ref,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-Modal = require('./modal.coffee');
+Modal = require('../views/modal');
 
 Photo = require('../models/photo');
 
@@ -5694,7 +5763,7 @@ module.exports = PhotoPickerCroper = (function(_super) {
     });
   };
 
-  PhotoPickerCroper.prototype.initialize = function(cb) {
+  PhotoPickerCroper.prototype.initialize = function(params, cb) {
     var body;
     this.config = {
       cssSpaceName: "object-picker",
@@ -5740,10 +5809,6 @@ module.exports = PhotoPickerCroper = (function(_super) {
     return true;
   };
 
-  PhotoPickerCroper.prototype.test = function(e) {
-    return console.log(e.type, this);
-  };
-
   PhotoPickerCroper.prototype.setupURL = function() {
     var btn, img, imgTmp, input, preloadImage, urlRegexp;
     img = this.body.querySelector('.url-preview');
@@ -5775,24 +5840,16 @@ module.exports = PhotoPickerCroper = (function(_super) {
   };
 
   PhotoPickerCroper.prototype.bindFileDropZone = function() {
-    var dragenter, dragover, drop, dropbox, hasEnteredText, print,
+    var dragenter, dragover, drop, dropbox, hasEnteredText,
       _this = this;
     dropbox = this.objectPickerCont.querySelector(".modal-file-drop-zone>div");
-    print = function(e) {
-      console.log(e.target);
-      return console.log(e.currentTarget);
-    };
     hasEnteredText = false;
     dropbox.addEventListener("dragenter", function(e) {
-      console.log('dragenter');
-      print(e);
       e.stopPropagation();
       e.preventDefault();
       return dropbox.classList.add('dragging');
     }, false);
     dropbox.addEventListener("dragleave", function(e) {
-      console.log('dragleave ');
-      print(e);
       e.stopPropagation();
       e.preventDefault();
       return dropbox.classList.remove('dragging');
@@ -6148,7 +6205,7 @@ module.exports = PhotoPickerCroper = (function(_super) {
   };
 
   PhotoPickerCroper.prototype.listFromFiles_cb = function(err, body) {
-    var files, hasNext, pathToSocketIO, socket,
+    var btn, files, hasNext, pathToSocketIO, socket,
       _this = this;
     if ((body != null ? body.files : void 0) != null) {
       files = body.files;
@@ -6170,7 +6227,9 @@ module.exports = PhotoPickerCroper = (function(_super) {
         }
       });
     } else if ((files != null) && Object.keys(files).length === 0) {
-      return this.thumbs$.innerHTML = "<p>" + (t('no image')) + "</p>";
+      this.thumbs$.innerHTML = "<p style='margin-top:20px'>" + (t('no image')) + "</p>";
+      btn = this.thumbs$.parentElement.children[1];
+      return btn.parentElement.removeChild(btn);
     } else {
       if ((body != null ? body.hasNext : void 0) != null) {
         hasNext = body.hasNext;

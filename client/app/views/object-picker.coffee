@@ -1,4 +1,4 @@
-Modal    = require './modal.coffee'
+Modal    = require '../views/modal'
 Photo    = require '../models/photo'
 template = require('../templates/object-picker')()
 
@@ -7,7 +7,8 @@ module.exports = class PhotoPickerCroper extends Modal
     # Class attributes
 
     id                : 'object-picker'
-    title             :  'pick from files'
+    title             :  'pick from files' # todo bja : t undefined ??
+    # title             : t 'pick from files' # todo bja : t undefined ??
 
     # Methods
 
@@ -21,7 +22,7 @@ module.exports = class PhotoPickerCroper extends Modal
         'change   #uploader'        : 'handleUploaderChange'
 
 
-    initialize: (cb) ->
+    initialize: (params, cb) ->
 
         @config =
             cssSpaceName    : "object-picker"
@@ -71,8 +72,6 @@ module.exports = class PhotoPickerCroper extends Modal
         @state.skip +=  @config.numPerPage
         return true
 
-    test: (e)->
-        console.log e.type, this
 
     setupURL: ()->
         img   = @body.querySelector('.url-preview')
@@ -106,13 +105,8 @@ module.exports = class PhotoPickerCroper extends Modal
 
     bindFileDropZone: ()->
         dropbox = @objectPickerCont.querySelector(".modal-file-drop-zone>div")
-        print = (e)->
-            console.log e.target
-            console.log e.currentTarget
         hasEnteredText = false
         dropbox.addEventListener("dragenter", (e)->
-            console.log 'dragenter'
-            print(e)
             e.stopPropagation()
             e.preventDefault()
             # if e.target.parentElement == dropbox
@@ -123,9 +117,6 @@ module.exports = class PhotoPickerCroper extends Modal
 
         ,false)
         dropbox.addEventListener("dragleave", (e)->
-            console.log 'dragleave '
-            print(e)
-
             e.stopPropagation()
             e.preventDefault()
             dropbox.classList.remove('dragging')
@@ -433,7 +424,9 @@ module.exports = class PhotoPickerCroper extends Modal
 
         # If there is no photos in Cozy
         else if files? and Object.keys(files).length is 0
-            @thumbs$.innerHTML = "<p>#{t 'no image'}</p>"
+            @thumbs$.innerHTML = "<p style='margin-top:20px'>#{t 'no image'}</p>"
+            btn = @thumbs$.parentElement.children[1]
+            btn.parentElement.removeChild(btn)
 
         # there are some images, add thumbs to modal
         else
