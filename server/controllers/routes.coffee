@@ -5,6 +5,7 @@ stackApplications = require './stack_application'
 devices           = require './devices'
 notifications     = require './notifications'
 file              = require './file'
+proxy             = require './proxy'
 
 module.exports =
 
@@ -70,3 +71,6 @@ module.exports =
         get: file.thumb
     'files/screens/:fileid':
         get: file.screen
+
+    'api/proxy/':
+        get: proxy.get

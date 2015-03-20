@@ -1,15 +1,16 @@
-Modal       = require '../views/modal'
-Photo       = require '../models/photo'
-template    = require('../templates/object-picker')()
+template    = require('../templates/object-picker-photoURL')()
 proxyclient = require('lib/proxyclient')
 
-module.exports = class PhotoPickerCroper extends Modal
+module.exports = class ObjectPickerPhotoURL
+
+    constructor: (container, objectPicker) ->
+
 
     # Class attributes
 
     id                : 'object-picker'
     title             :  'pick from files' # todo bja : t undefined ??
-    title             : t 'pick from files' # todo bja : t undefined ??
+    # title             : t 'pick from files' # todo bja : t undefined ??
 
     # Methods
 
