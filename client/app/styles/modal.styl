@@ -77,11 +77,6 @@ radius = 3px
         text-align: right
         padding: 14px 15px 15px
 
-// .modalCY.fade
-//     transition:opacity 0.3s linear, top 0.3s ease-out
-
-// .modalCY.fade.in
-//     top:50%
 
 @media (max-height: 38em)
     .modalCY
@@ -99,3 +94,24 @@ radius = 3px
             padding-bottom : 4px
 
 
+@media (max-width: 39em)
+    .modalCY
+        height:100%
+        width:100%
+        border-radius    :0
+        .modalCY-header
+            font-size      : 1.1em
+            padding-top    : 7px
+            padding-bottom : 7px
+        .modalCY-body
+            overflow:hidden
+            flex:1
+        .modalCY-footer
+            padding-top    : 4px
+            padding-bottom : 4px
+
+@media (max-height: 17em)
+    .modalCY
+        height:100%
+        width:100%
+        border-radius    :0

@@ -2878,6 +2878,33 @@ button.btn {
     padding-bottom: 4px;
   }
 }
+@media (max-width: 39em) {
+  .modalCY {
+    height: 100%;
+    width: 100%;
+    border-radius: 0;
+  }
+  .modalCY .modalCY-header {
+    font-size: 1.1em;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+  .modalCY .modalCY-body {
+    overflow: hidden;
+    flex: 1;
+  }
+  .modalCY .modalCY-footer {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+}
+@media (max-height: 17em) {
+  .modalCY {
+    height: 100%;
+    width: 100%;
+    border-radius: 0;
+  }
+}
 
 .object-picker .modalCY-body {
   display: flex;
@@ -2896,18 +2923,16 @@ button.btn {
   background-color: #fff;
 }
 .object-picker .fp-nav-tabs {
-  background-color: #ddd;
   flex-shrink: 0;
   flex-grow: 0;
-}
-.object-picker [role='tablist'] {
+  background-color: #ddd;
   display: flex;
   flex-direction: column;
 }
-.object-picker [role='tabMarginTop'] {
+.object-picker .tabMarginTop {
   flex-grow: 2;
 }
-.object-picker [role='tabMarginBottom'] {
+.object-picker .tabMarginBottom {
   flex-grow: 3;
 }
 .object-picker [role='tab'] {
@@ -2975,16 +3000,16 @@ button.btn {
   position: relative;
 }
 .object-picker .modal-file-drop-zone >div {
-  border-color: #e4e2e2;
-  border-style: dashed;
-  border-width: 5px;
-  margin: 0px;
+  position: absolute;
   left: 15px;
   right: 15px;
   top: 15px;
   bottom: 15px;
   z-index: 1;
-  position: absolute;
+  border-color: #e4e2e2;
+  border-style: dashed;
+  border-width: 5px;
+  margin: 0px;
 }
 .object-picker .modal-file-drop-zone .dragging {
   border-color: #34a6ff;
@@ -3007,7 +3032,14 @@ button.btn {
   justify-content: center;
   margin-bottom: 1.3em;
 }
-.object-picker .urlPhotoUpload > div {
+.object-picker .bloc-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  align-items: stretch;
+  height: 1.8em;
+}
+.object-picker .img-container {
   position: relative;
   flex-grow: 1;
   flex-shrink: 1;
@@ -3041,7 +3073,7 @@ button.btn {
   padding-left: 0.4em;
   border-color: #34a6ff;
   background: transparent;
-  font-size: 1.2em;
+  font-size: 1em;
 }
 .object-picker .modal-url-input:hover {
   border-color: #fe8800;

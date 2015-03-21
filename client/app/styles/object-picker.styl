@@ -5,30 +5,28 @@
     position :relative
 
   .objectPickerCont
-    flex            :1
+    flex :1
     display         :flex
     flex-direction  :row
     justify-content :stretch
-    position        :absolute
-    top             :0
-    bottom          :0
-    right           :0
-    left            :0
-    background-color:white
+    position :absolute
+    top      :0
+    bottom   :0
+    right    :0
+    left     :0
+    background-color :white
 
   .fp-nav-tabs
+    flex-shrink :0
+    flex-grow   :0
     background-color :#ddd
-    flex-shrink      :0
-    flex-grow        :0
+    display        :flex
+    flex-direction :column
 
-  [role='tablist']
-    display:flex
-    flex-direction:column
-
-  [role='tabMarginTop']
+  .tabMarginTop
     flex-grow:2
 
-  [role='tabMarginBottom']
+  .tabMarginBottom
     flex-grow:3
 
   [role='tab']
@@ -48,13 +46,9 @@
 
   [role='tabpanel']
     flex-grow:1
-    // height:100%
-  //   position:relative
 
   .thumbPicker
     overflow:auto
-    // padding-right:15px
-    // margin-left:15px
 
   .photoUpload[aria-hidden="false"]
     display:flex
@@ -100,16 +94,16 @@
     position:relative
 
     >div
-      border-color:#E4E2E2
-      border-style:dashed
-      border-width:5px
-      margin:0px
-      left:15px
-      right:15px
-      top:15px
-      bottom:15px
+      position :absolute
+      left     :15px
+      right    :15px
+      top      :15px
+      bottom   :15px
       z-index:1
-      position:absolute
+      border-color :#E4E2E2
+      border-style :dashed
+      border-width :5px
+      margin       :0px
     .dragging
       border-color:#34A6FF
 
@@ -125,15 +119,23 @@
       transform: translateX(-50%) translateY(-50%)
 
   margin-urlUpload = 1.3em
-
+  url-input-height = 1.8em
   .urlPhotoUpload[aria-hidden="false"]
     display         :flex
     flex-direction  :column
+    // align-items     :stretch
     align-items     :stretch
     justify-content :center
     margin-bottom :margin-urlUpload
 
-  .urlPhotoUpload > div
+  .bloc-container
+    display         :flex
+    flex-direction  :column
+    justify-content :stretch
+    align-items     :stretch
+    height: url-input-height
+
+  .img-container
     position    :relative
     flex-grow   :1
     flex-shrink :1
@@ -167,7 +169,7 @@
     padding-left:0.4em
     border-color:#34a6ff
     background:transparent
-    font-size:1.2em
+    font-size:1.0em
 
   .modal-url-input:hover
     border-color:#fe8800
