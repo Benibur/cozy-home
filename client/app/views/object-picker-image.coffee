@@ -7,14 +7,14 @@ module.exports = class ObjectPickerImage
 ## PUBLIC SECTION ##
 #
     constructor: (@objectPicker, @config) ->
+        ####
         # init state
         @state =
             selected    : {} # selected.photoID = thumb = {id,name,thumbEl}
             selected_n  : 0  # number of photos selected
             skip        : 0  # rank of the oldest downloaded thumb
             percent     : 0  # % of thumbnails computation avancement (if any)
-
-
+        ####
         # get elements
         @name     = 'thumbPicker'
         @tabLabel = 'image'
@@ -22,13 +22,13 @@ module.exports = class ObjectPickerImage
         @panel    = $(template)[0]
         @thumbs$  = @panel.querySelector('.thumbsContainer') # the div containing photos
         @nextBtn$ = @panel.querySelector('.next')
-
+        ####
         # bind events
         @thumbs$.addEventListener( 'click'   , @_validateClick    )
         @thumbs$.addEventListener( 'dblclick', @_validateDblClick )
         @nextBtn$.addEventListener('click'   , @_displayMore      )
-
-        # get the first thumbs
+        ####
+        # get the first batch of thumbs
         @_addPage(0, @config.numPerPage)
 
 
@@ -39,7 +39,14 @@ module.exports = class ObjectPickerImage
             return false
 
 
+    setFocusIfExpected : () ->
+        # the panel doesn't want the focus because otherwise the arrows keys
+        # makes thumbs scroll
+        return false
+
+
     keyHandler : (e)->
+        ####
         # console.log 'ObjectPickerImage.keyHandler', e.which
         switch e.which
             when 27 # escape key
@@ -50,15 +57,19 @@ module.exports = class ObjectPickerImage
                 @objectPicker.onYes()
             when 39 # right key
                 e.stopPropagation()
+                e.preventDefault()
                 @_selectNextThumb()
             when 37 # left key
                 e.stopPropagation()
+                e.preventDefault()
                 @_selectPreviousThumb()
             when 38 # up key
                 e.stopPropagation()
+                e.preventDefault()
                 @_selectThumbUp()
             when 40 # down key
                 e.stopPropagation()
+                e.preventDefault()
                 @_selectThumbDown()
             else
                 return false
@@ -74,7 +85,6 @@ module.exports = class ObjectPickerImage
         return tab
 
 
-    # todo bja : où est le click sur le bouton ?? où est les bouton ??
     _displayMore: =>
         # Display next page of photo
         @_addPage(@state.skip, @config.numPerPage)
@@ -145,7 +155,7 @@ module.exports = class ObjectPickerImage
 
 
     _validateDblClick:(e)=>
-        console.log 'dblclick'
+        # console.log 'dblclick'
         if e.target.nodeName != "IMG"
             return
         if @config.singleSelection
@@ -157,7 +167,7 @@ module.exports = class ObjectPickerImage
 
 
     _validateClick:(e)=>
-        console.log 'click'
+        # console.log 'click'
         el = e.target
         if el.nodeName != "IMG"
             return

@@ -3,13 +3,14 @@ template             = require('../templates/object-picker')()
 ObjectPickerPhotoURL = require './object-picker-photoURL'
 ObjectPickerUpload   = require './object-picker-upload'
 ObjectPickerImage    = require './object-picker-image'
+tabControler         = require 'views/tab-controler'
 
 
 module.exports = class PhotoPickerCroper extends Modal
 
-####################
-## PUBLIC SECTION ##
-#
+################################################################################
+## PUBLIC SECTION
+
 # Class attributes
 
     id                : 'object-picker'
@@ -21,11 +22,11 @@ module.exports = class PhotoPickerCroper extends Modal
     events: -> _.extend super,
         'click    a.next'           : 'displayMore'
         'click    a.prev'           : 'displayPrevPage'
-        'click    .chooseAgain'     : 'chooseAgain'
+        'click    .chooseAgain'     : '_chooseAgain'
 
 
     initialize: (params, cb) ->
-
+        ####
         # init config & state and super
         @config =
             cssSpaceName    : "object-picker"
@@ -41,7 +42,7 @@ module.exports = class PhotoPickerCroper extends Modal
             img_naturalW: 0  # natural width  (px) of the selected file
             img_naturalH: 0  # natural height (px) of the selected file
         super(@config)
-
+        ####
         # get elements
         body              = @el.querySelector('.modalCY-body')
         body.innerHTML    = template
@@ -51,40 +52,40 @@ module.exports = class PhotoPickerCroper extends Modal
         @cropper$         = @el.querySelector('.croperCont')
         @imgToCrop        = @cropper$.querySelector('#img-to-crop')
         @imgPreview       = @cropper$.querySelector('#img-preview')
-        @nextBtn          = body.querySelector('.next')
-
+        ####
         # initialise tabs and panels
-        tabControler = require('views/tab-controler')
+        @panelsControlers = {} # {tab1.name : tab1Controler, tab2... }
+        # image panel
         @imagePanel = new ObjectPickerImage(this, @config)
         tabControler.addTab @objectPickerCont, @tablist, @imagePanel
+        @panelsControlers[@imagePanel.name] = @imagePanel
+        # photoURL panel
         @photoURLpanel = new ObjectPickerPhotoURL(this)
         tabControler.addTab @objectPickerCont, @tablist, @photoURLpanel
+        @panelsControlers[@photoURLpanel.name] = @photoURLpanel
+        # upload panel
         @uploadPanel = new ObjectPickerUpload(this)
         tabControler.addTab @objectPickerCont, @tablist, @uploadPanel
+        @panelsControlers[@uploadPanel.name] = @uploadPanel
+        # init tabs
         tabControler.initializeTabs(body)
-        @listenTabsSelection()
-        @selectDefaultTab(@imagePanel.name)
-
+        @_listenTabsSelection()
+        @_selectDefaultTab(@imagePanel.name)
+        ####
         # init the cropper
-        @imgToCrop.addEventListener('load', @onImgToCropLoaded, false)
+        @imgToCrop.addEventListener('load', @_onImgToCropLoaded, false)
         @cropper$.style.display = 'none'
 
         return true
 
 
-    # supercharge the modal behavour : "ok" leads to the cropping step
     onYes: ()->
-        # console.log "onYes", @state.currentStep, @sourceType
+    # overload the modal behavour : "ok" leads to the cropping step
+        # console.log "onYes", @state.currentStep, @state.activePanel
         if @state.currentStep == 'objectPicker'
-            switch @sourceType
-                when @imagePanel.name
-                    url = @imagePanel.getObject()
-                when @photoURLpanel.name
-                    url = @photoURLpanel.getObject()
-                when @uploadPanel.name
-                    url = @uploadPanel.getObject()
+            url = @state.activePanel.getObject()
             if url
-                @showCropingTool(url)
+                @_showCropingTool(url)
         else
             s = @imgPreview.style
             r = @state.img_naturalW / @imgPreview.width
@@ -93,35 +94,41 @@ module.exports = class PhotoPickerCroper extends Modal
                 sy      : Math.round(- parseInt(s.marginTop )*r)
                 sWidth  : Math.round(@config.target_h*r)
                 sHeight : Math.round(@config.target_w*r)
+            # check the size of the cropped image is strictly into imgPreview
+            if d.sx < 0 then d.sx = 0
+            if d.sy < 0 then d.sy = 0
+            if d.sx + d.sWidth > @imgPreview.naturalWidth
+                d.sWidth = @imgPreview.naturalWidth - d.sx
+            if d.sy + d.sHeight > @imgPreview.naturalHeight
+                d.sHeight = @imgPreview.naturalHeight - d.sy
+            # send result
+            @cb(true,@_getResultDataURL(@imgPreview, d))
             @close()
-            @cb(true,@getResultDataURL(@imgPreview, d))
 
 
-#####################
+################################################################################
 ## PRIVATE SECTION ##
 #
 
-    getResultDataURL:(img, dimensions)->
+    _getResultDataURL:(img, dimensions)->
         IMAGE_DIMENSION = 600
-
-        # use canvas to resize the image
+        # use canvas to resize the image and return the urldata
         canvas = document.createElement 'canvas'
         canvas.height = canvas.width = IMAGE_DIMENSION
         ctx = canvas.getContext '2d'
-        if dimensions?
-            d = dimensions
-            ctx.drawImage( img, d.sx, d.sy, d.sWidth,
-                           d.sHeight, 0, 0, IMAGE_DIMENSION, IMAGE_DIMENSION)
+        d = dimensions
+        ctx.drawImage( img, d.sx, d.sy, d.sWidth,
+                       d.sHeight, 0, 0, IMAGE_DIMENSION, IMAGE_DIMENSION)
         return dataUrl =  canvas.toDataURL 'image/jpeg'
 
 
-
     onKeyStroke: (e)->
-        console.log 'onKeyStroke', e.which, @sourceType
+    # overloads the modal onKeyStroke
+        # console.log 'onKeyStroke', e.which, @state.activePanel
         if @state.currentStep == 'croper'
             if e.which is 27 # escape key => choose another photo
                 e.stopPropagation()
-                @chooseAgain()
+                @_chooseAgain()
             else if e.which == 13 # return key => validate modal
                 e.stopPropagation()
                 @onYes()
@@ -129,29 +136,21 @@ module.exports = class PhotoPickerCroper extends Modal
             else
                 return
         else # @state.currentStep == 'objectPicker'
-            switch @sourceType
-                when @imagePanel.name
-                    @imagePanel.keyHandler(e)
-                when @uploadPanel.name
-                    @uploadPanel.keyHandler(e)
-                when @photoURLpanel.name
-                    @photoURLpanel.keyHandler(e)
+            @state.activePanel.keyHandler(e)
         return
 
 
-    # url : path or dataUrl
-    showCropingTool: (url)->
-        @state.currentStep = 'croper'
+    # returns a url wich can be a path or dataUrl
+    _showCropingTool: (url)->
+        @state.currentStep  = 'croper'
         @currentPhotoScroll = @body.scrollTop
-
         @objectPickerCont.style.display = 'none'
-        @cropper$.style.display = ''
-
+        @cropper$.style.display         = ''
         @imgToCrop.src  = url
         @imgPreview.src = url
 
 
-    onImgToCropLoaded: ()=>
+    _onImgToCropLoaded: ()=>
         img_w  = @imgToCrop.width
         img_h  = @imgToCrop.height
         @img_w = img_w
@@ -162,8 +161,8 @@ module.exports = class PhotoPickerCroper extends Modal
         x = Math.round( (img_w-selection_w)/2 )
         y = Math.round( (img_h-selection_w)/2 )
         options =
-            onChange    : @updateCropedPreview
-            onSelect    : @updateCropedPreview
+            onChange    : @_updateCropedPreview
+            onSelect    : @_updateCropedPreview
             aspectRatio : 1
             setSelect   : [ x, y, x+selection_w, y+selection_w ]
         t = this
@@ -173,7 +172,7 @@ module.exports = class PhotoPickerCroper extends Modal
         t.jcrop_api.focus()
 
 
-    updateCropedPreview: (coords) =>
+    _updateCropedPreview: (coords) =>
         prev_w = @img_w / coords.w * @config.target_w
         prev_h = @img_h / coords.h * @config.target_h
         prev_x = @config.target_w  / coords.w * coords.x
@@ -186,7 +185,8 @@ module.exports = class PhotoPickerCroper extends Modal
         return true
 
 
-    chooseAgain : ()->
+    _chooseAgain : ()->
+    # brings back from cropping step to the objectPicker step
         @state.currentStep = 'objectPicker'
         @jcrop_api.destroy()
         @imgToCrop.removeAttribute('style')
@@ -194,19 +194,26 @@ module.exports = class PhotoPickerCroper extends Modal
         @objectPickerCont.style.display = ''
         @cropper$.style.display = 'none'
         @body.scrollTop = @currentPhotoScroll
+        # manage focus wich was on the jcrop element
+        @_setFocus()
 
+    _setFocus: ()->
+        # console.log "HOME/objectPicker._setFocus", @state.activePanel
+        if !@state.activePanel.setFocusIfExpected()
+            @el.focus()
 
-    listenTabsSelection: ()->
+    _listenTabsSelection: ()->
         @objectPickerCont.addEventListener('panelSelect',(event)=>
-            @activateSourceType(event.target.className)
+            @_activatePanel(event.target.className)
         )
 
 
-    selectDefaultTab:(panelClassName)->
+    _selectDefaultTab:(panelClassName)->
         @tablist.querySelector("[aria-controls=#{panelClassName}]").click()
 
 
-    activateSourceType: (sourceType)->
-        console.log 'sourceType =', sourceType
-        @sourceType = sourceType
+    _activatePanel: (panelClassName)->
+        # console.log 'panelClassName =', panelClassName
+        @state.activePanel = @panelsControlers[panelClassName]
+        @_setFocus()
 

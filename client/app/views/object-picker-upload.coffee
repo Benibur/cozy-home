@@ -18,6 +18,7 @@ module.exports = class ObjectPickerUpload
         @_bindFileDropZone()
         btn = @panel.querySelector('.modal-uploadBtn')
         btn.addEventListener('click', @_changePhotoFromUpload)
+        @btn = btn
         @uploader = @panel.querySelector('.uploader')
         @uploader.addEventListener('change', @_handleUploaderChange)
 
@@ -25,6 +26,9 @@ module.exports = class ObjectPickerUpload
     getObject : () ->
         return @dataURL
 
+    setFocusIfExpected : () ->
+        @btn.focus()
+        return true
 
     keyHandler : (e)=>
         # console.log 'ObjectPickerUpload', e.which
@@ -55,14 +59,14 @@ module.exports = class ObjectPickerUpload
         hasEnteredText = false
 
         dropbox.addEventListener("dragenter", (e)->
-            console.log 'dragenter'
+            # console.log 'dragenter'
             e.stopPropagation()
             e.preventDefault()
             dropbox.classList.add('dragging')
         ,false)
 
         dropbox.addEventListener("dragleave", (e)->
-            console.log 'dragleave'
+            # console.log 'dragleave'
             e.stopPropagation()
             e.preventDefault()
             dropbox.classList.remove('dragging')
@@ -85,7 +89,7 @@ module.exports = class ObjectPickerUpload
 
 
     _changePhotoFromUpload: () =>
-        console.log "_changePhotoFromUpload"
+        # console.log "_changePhotoFromUpload"
         @uploadPopupOpened = true # todo bja : pb : is not set to false if the user close the popup by clicking on the close button...
         @uploader.click()
 
@@ -96,7 +100,7 @@ module.exports = class ObjectPickerUpload
 
 
     _handleFile: (file) =>
-        console.log "_handleFile"
+        # console.log "_handleFile"
         unless file.type.match /image\/.*/
             return alert t 'This is not an image'
         reader = new FileReader()

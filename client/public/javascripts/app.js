@@ -670,7 +670,6 @@ module.exports = IntentManager = (function() {
 
   IntentManager.prototype.handleIntent = function(message) {
     var intent;
-    console.log("HOME / IntentManager, received message ", message);
     intent = message.data;
     switch (intent.type) {
       case 'goto':
@@ -2880,7 +2879,7 @@ attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow |
 var buf = [];
 with (locals || {}) {
 var interp;
-buf.push('<section><div class="bloc-container"><div class="img-container"><div class="url-preview"></div></div><input placeholder="url of an image on the web" value="https://weechat.org/media/images/weechat_logo_small.png" class="modal-url-input"/></div></section>');
+buf.push('<section><div class="bloc-container"><div class="img-container"><div class="url-preview"></div></div><input placeholder="url of an image on the web" value="" class="modal-url-input"/></div></section>');
 }
 return buf.join("");
 };
@@ -5808,6 +5807,10 @@ module.exports = ObjectPickerImage = (function() {
     }
   };
 
+  ObjectPickerImage.prototype.setFocusIfExpected = function() {
+    return false;
+  };
+
   ObjectPickerImage.prototype.keyHandler = function(e) {
     switch (e.which) {
       case 27:
@@ -5820,18 +5823,22 @@ module.exports = ObjectPickerImage = (function() {
         break;
       case 39:
         e.stopPropagation();
+        e.preventDefault();
         this._selectNextThumb();
         break;
       case 37:
         e.stopPropagation();
+        e.preventDefault();
         this._selectPreviousThumb();
         break;
       case 38:
         e.stopPropagation();
+        e.preventDefault();
         this._selectThumbUp();
         break;
       case 40:
         e.stopPropagation();
+        e.preventDefault();
         this._selectThumbDown();
         break;
       default:
@@ -5915,7 +5922,6 @@ module.exports = ObjectPickerImage = (function() {
   };
 
   ObjectPickerImage.prototype._validateDblClick = function(e) {
-    console.log('dblclick');
     if (e.target.nodeName !== "IMG") {
       return;
     }
@@ -5931,7 +5937,6 @@ module.exports = ObjectPickerImage = (function() {
 
   ObjectPickerImage.prototype._validateClick = function(e) {
     var el;
-    console.log('click');
     el = e.target;
     if (el.nodeName !== "IMG") {
       return;
@@ -6102,6 +6107,7 @@ module.exports = ObjectPickerPhotoURL = (function() {
     this.img = this.panel.querySelector('.url-preview');
     this.blocContainer = this.panel.querySelector('.bloc-container');
     this.url = void 0;
+    this.input = this.panel.querySelector('.modal-url-input');
     this._setupInput();
   }
 
@@ -6111,6 +6117,12 @@ module.exports = ObjectPickerPhotoURL = (function() {
     } else {
       return false;
     }
+  };
+
+  ObjectPickerPhotoURL.prototype.setFocusIfExpected = function() {
+    this.input.focus();
+    this.input.select();
+    return true;
   };
 
   ObjectPickerPhotoURL.prototype.keyHandler = function(e) {
@@ -6130,10 +6142,9 @@ module.exports = ObjectPickerPhotoURL = (function() {
   };
 
   ObjectPickerPhotoURL.prototype._setupInput = function() {
-    var img, imgTmp, input, preloadImage, urlRegexp,
+    var img, imgTmp, preloadImage, urlRegexp,
       _this = this;
     img = this.img;
-    input = this.panel.querySelector('.modal-url-input');
     urlRegexp = /\b(https?|ftp|file):\/\/[\-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i;
     imgTmp = new Image();
     imgTmp.onerror = function() {
@@ -6151,9 +6162,9 @@ module.exports = ObjectPickerPhotoURL = (function() {
     preloadImage = function(src) {
       return imgTmp.src = src;
     };
-    return input.addEventListener('input', function(e) {
+    return this.input.addEventListener('input', function(e) {
       var newurl, url;
-      newurl = input.value;
+      newurl = e.target.value;
       if (urlRegexp.test(newurl)) {
         url = 'api/proxy/?url=' + encodeURIComponent(newurl);
         return preloadImage(url);
@@ -6197,12 +6208,18 @@ module.exports = ObjectPickerUpload = (function() {
     this._bindFileDropZone();
     btn = this.panel.querySelector('.modal-uploadBtn');
     btn.addEventListener('click', this._changePhotoFromUpload);
+    this.btn = btn;
     this.uploader = this.panel.querySelector('.uploader');
     this.uploader.addEventListener('change', this._handleUploaderChange);
   }
 
   ObjectPickerUpload.prototype.getObject = function() {
     return this.dataURL;
+  };
+
+  ObjectPickerUpload.prototype.setFocusIfExpected = function() {
+    this.btn.focus();
+    return true;
   };
 
   ObjectPickerUpload.prototype.keyHandler = function(e) {
@@ -6234,13 +6251,11 @@ module.exports = ObjectPickerUpload = (function() {
     dropbox = this.panel.querySelector(".modal-file-drop-zone>div");
     hasEnteredText = false;
     dropbox.addEventListener("dragenter", function(e) {
-      console.log('dragenter');
       e.stopPropagation();
       e.preventDefault();
       return dropbox.classList.add('dragging');
     }, false);
     dropbox.addEventListener("dragleave", function(e) {
-      console.log('dragleave');
       e.stopPropagation();
       e.preventDefault();
       return dropbox.classList.remove('dragging');
@@ -6263,7 +6278,6 @@ module.exports = ObjectPickerUpload = (function() {
   };
 
   ObjectPickerUpload.prototype._changePhotoFromUpload = function() {
-    console.log("_changePhotoFromUpload");
     this.uploadPopupOpened = true;
     return this.uploader.click();
   };
@@ -6277,7 +6291,6 @@ module.exports = ObjectPickerUpload = (function() {
   ObjectPickerUpload.prototype._handleFile = function(file) {
     var img, reader,
       _this = this;
-    console.log("_handleFile");
     if (!file.type.match(/image\/.*/)) {
       return alert(t('This is not an image'));
     }
@@ -6296,7 +6309,7 @@ module.exports = ObjectPickerUpload = (function() {
 });
 
 ;require.register("views/object-picker", function(exports, require, module) {
-var Modal, ObjectPickerImage, ObjectPickerPhotoURL, ObjectPickerUpload, PhotoPickerCroper, template, _ref,
+var Modal, ObjectPickerImage, ObjectPickerPhotoURL, ObjectPickerUpload, PhotoPickerCroper, tabControler, template, _ref,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6311,12 +6324,14 @@ ObjectPickerUpload = require('./object-picker-upload');
 
 ObjectPickerImage = require('./object-picker-image');
 
+tabControler = require('views/tab-controler');
+
 module.exports = PhotoPickerCroper = (function(_super) {
   __extends(PhotoPickerCroper, _super);
 
   function PhotoPickerCroper() {
-    this.updateCropedPreview = __bind(this.updateCropedPreview, this);
-    this.onImgToCropLoaded = __bind(this.onImgToCropLoaded, this);
+    this._updateCropedPreview = __bind(this._updateCropedPreview, this);
+    this._onImgToCropLoaded = __bind(this._onImgToCropLoaded, this);
     _ref = PhotoPickerCroper.__super__.constructor.apply(this, arguments);
     return _ref;
   }
@@ -6329,12 +6344,12 @@ module.exports = PhotoPickerCroper = (function(_super) {
     return _.extend(PhotoPickerCroper.__super__.events.apply(this, arguments), {
       'click    a.next': 'displayMore',
       'click    a.prev': 'displayPrevPage',
-      'click    .chooseAgain': 'chooseAgain'
+      'click    .chooseAgain': '_chooseAgain'
     });
   };
 
   PhotoPickerCroper.prototype.initialize = function(params, cb) {
-    var body, tabControler;
+    var body;
     this.config = {
       cssSpaceName: "object-picker",
       singleSelection: true,
@@ -6359,18 +6374,20 @@ module.exports = PhotoPickerCroper = (function(_super) {
     this.cropper$ = this.el.querySelector('.croperCont');
     this.imgToCrop = this.cropper$.querySelector('#img-to-crop');
     this.imgPreview = this.cropper$.querySelector('#img-preview');
-    this.nextBtn = body.querySelector('.next');
-    tabControler = require('views/tab-controler');
+    this.panelsControlers = {};
     this.imagePanel = new ObjectPickerImage(this, this.config);
     tabControler.addTab(this.objectPickerCont, this.tablist, this.imagePanel);
+    this.panelsControlers[this.imagePanel.name] = this.imagePanel;
     this.photoURLpanel = new ObjectPickerPhotoURL(this);
     tabControler.addTab(this.objectPickerCont, this.tablist, this.photoURLpanel);
+    this.panelsControlers[this.photoURLpanel.name] = this.photoURLpanel;
     this.uploadPanel = new ObjectPickerUpload(this);
     tabControler.addTab(this.objectPickerCont, this.tablist, this.uploadPanel);
+    this.panelsControlers[this.uploadPanel.name] = this.uploadPanel;
     tabControler.initializeTabs(body);
-    this.listenTabsSelection();
-    this.selectDefaultTab(this.imagePanel.name);
-    this.imgToCrop.addEventListener('load', this.onImgToCropLoaded, false);
+    this._listenTabsSelection();
+    this._selectDefaultTab(this.imagePanel.name);
+    this.imgToCrop.addEventListener('load', this._onImgToCropLoaded, false);
     this.cropper$.style.display = 'none';
     return true;
   };
@@ -6378,18 +6395,9 @@ module.exports = PhotoPickerCroper = (function(_super) {
   PhotoPickerCroper.prototype.onYes = function() {
     var d, r, s, url;
     if (this.state.currentStep === 'objectPicker') {
-      switch (this.sourceType) {
-        case this.imagePanel.name:
-          url = this.imagePanel.getObject();
-          break;
-        case this.photoURLpanel.name:
-          url = this.photoURLpanel.getObject();
-          break;
-        case this.uploadPanel.name:
-          url = this.uploadPanel.getObject();
-      }
+      url = this.state.activePanel.getObject();
       if (url) {
-        return this.showCropingTool(url);
+        return this._showCropingTool(url);
       }
     } else {
       s = this.imgPreview.style;
@@ -6400,30 +6408,39 @@ module.exports = PhotoPickerCroper = (function(_super) {
         sWidth: Math.round(this.config.target_h * r),
         sHeight: Math.round(this.config.target_w * r)
       };
-      this.close();
-      return this.cb(true, this.getResultDataURL(this.imgPreview, d));
+      if (d.sx < 0) {
+        d.sx = 0;
+      }
+      if (d.sy < 0) {
+        d.sy = 0;
+      }
+      if (d.sx + d.sWidth > this.imgPreview.naturalWidth) {
+        d.sWidth = this.imgPreview.naturalWidth - d.sx;
+      }
+      if (d.sy + d.sHeight > this.imgPreview.naturalHeight) {
+        d.sHeight = this.imgPreview.naturalHeight - d.sy;
+      }
+      this.cb(true, this._getResultDataURL(this.imgPreview, d));
+      return this.close();
     }
   };
 
-  PhotoPickerCroper.prototype.getResultDataURL = function(img, dimensions) {
+  PhotoPickerCroper.prototype._getResultDataURL = function(img, dimensions) {
     var IMAGE_DIMENSION, canvas, ctx, d, dataUrl;
     IMAGE_DIMENSION = 600;
     canvas = document.createElement('canvas');
     canvas.height = canvas.width = IMAGE_DIMENSION;
     ctx = canvas.getContext('2d');
-    if (dimensions != null) {
-      d = dimensions;
-      ctx.drawImage(img, d.sx, d.sy, d.sWidth, d.sHeight, 0, 0, IMAGE_DIMENSION, IMAGE_DIMENSION);
-    }
+    d = dimensions;
+    ctx.drawImage(img, d.sx, d.sy, d.sWidth, d.sHeight, 0, 0, IMAGE_DIMENSION, IMAGE_DIMENSION);
     return dataUrl = canvas.toDataURL('image/jpeg');
   };
 
   PhotoPickerCroper.prototype.onKeyStroke = function(e) {
-    console.log('onKeyStroke', e.which, this.sourceType);
     if (this.state.currentStep === 'croper') {
       if (e.which === 27) {
         e.stopPropagation();
-        this.chooseAgain();
+        this._chooseAgain();
       } else if (e.which === 13) {
         e.stopPropagation();
         this.onYes();
@@ -6432,20 +6449,11 @@ module.exports = PhotoPickerCroper = (function(_super) {
         return;
       }
     } else {
-      switch (this.sourceType) {
-        case this.imagePanel.name:
-          this.imagePanel.keyHandler(e);
-          break;
-        case this.uploadPanel.name:
-          this.uploadPanel.keyHandler(e);
-          break;
-        case this.photoURLpanel.name:
-          this.photoURLpanel.keyHandler(e);
-      }
+      this.state.activePanel.keyHandler(e);
     }
   };
 
-  PhotoPickerCroper.prototype.showCropingTool = function(url) {
+  PhotoPickerCroper.prototype._showCropingTool = function(url) {
     this.state.currentStep = 'croper';
     this.currentPhotoScroll = this.body.scrollTop;
     this.objectPickerCont.style.display = 'none';
@@ -6454,7 +6462,7 @@ module.exports = PhotoPickerCroper = (function(_super) {
     return this.imgPreview.src = url;
   };
 
-  PhotoPickerCroper.prototype.onImgToCropLoaded = function() {
+  PhotoPickerCroper.prototype._onImgToCropLoaded = function() {
     var img_h, img_w, options, selection_w, t, x, y;
     img_w = this.imgToCrop.width;
     img_h = this.imgToCrop.height;
@@ -6466,8 +6474,8 @@ module.exports = PhotoPickerCroper = (function(_super) {
     x = Math.round((img_w - selection_w) / 2);
     y = Math.round((img_h - selection_w) / 2);
     options = {
-      onChange: this.updateCropedPreview,
-      onSelect: this.updateCropedPreview,
+      onChange: this._updateCropedPreview,
+      onSelect: this._updateCropedPreview,
       aspectRatio: 1,
       setSelect: [x, y, x + selection_w, y + selection_w]
     };
@@ -6478,7 +6486,7 @@ module.exports = PhotoPickerCroper = (function(_super) {
     return t.jcrop_api.focus();
   };
 
-  PhotoPickerCroper.prototype.updateCropedPreview = function(coords) {
+  PhotoPickerCroper.prototype._updateCropedPreview = function(coords) {
     var prev_h, prev_w, prev_x, prev_y, s;
     prev_w = this.img_w / coords.w * this.config.target_w;
     prev_h = this.img_h / coords.h * this.config.target_h;
@@ -6492,30 +6500,37 @@ module.exports = PhotoPickerCroper = (function(_super) {
     return true;
   };
 
-  PhotoPickerCroper.prototype.chooseAgain = function() {
+  PhotoPickerCroper.prototype._chooseAgain = function() {
     this.state.currentStep = 'objectPicker';
     this.jcrop_api.destroy();
     this.imgToCrop.removeAttribute('style');
     this.imgToCrop.src = '';
     this.objectPickerCont.style.display = '';
     this.cropper$.style.display = 'none';
-    return this.body.scrollTop = this.currentPhotoScroll;
+    this.body.scrollTop = this.currentPhotoScroll;
+    return this._setFocus();
   };
 
-  PhotoPickerCroper.prototype.listenTabsSelection = function() {
+  PhotoPickerCroper.prototype._setFocus = function() {
+    if (!this.state.activePanel.setFocusIfExpected()) {
+      return this.el.focus();
+    }
+  };
+
+  PhotoPickerCroper.prototype._listenTabsSelection = function() {
     var _this = this;
     return this.objectPickerCont.addEventListener('panelSelect', function(event) {
-      return _this.activateSourceType(event.target.className);
+      return _this._activatePanel(event.target.className);
     });
   };
 
-  PhotoPickerCroper.prototype.selectDefaultTab = function(panelClassName) {
+  PhotoPickerCroper.prototype._selectDefaultTab = function(panelClassName) {
     return this.tablist.querySelector("[aria-controls=" + panelClassName + "]").click();
   };
 
-  PhotoPickerCroper.prototype.activateSourceType = function(sourceType) {
-    console.log('sourceType =', sourceType);
-    return this.sourceType = sourceType;
+  PhotoPickerCroper.prototype._activatePanel = function(panelClassName) {
+    this.state.activePanel = this.panelsControlers[panelClassName];
+    return this._setFocus();
   };
 
   return PhotoPickerCroper;

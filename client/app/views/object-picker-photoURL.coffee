@@ -14,6 +14,7 @@ module.exports = class ObjectPickerPhotoURL
         @img      = @panel.querySelector('.url-preview')
         @blocContainer=@panel.querySelector('.bloc-container')
         @url      = undefined
+        @input    = @panel.querySelector('.modal-url-input')
         @_setupInput()
 
 
@@ -22,6 +23,11 @@ module.exports = class ObjectPickerPhotoURL
             return @url
         else
             return false
+
+    setFocusIfExpected : () ->
+        @input.focus()
+        @input.select()
+        return true
 
 
     keyHandler : (e)->
@@ -40,7 +46,6 @@ module.exports = class ObjectPickerPhotoURL
     # manages the url typed in the input and update image
     _setupInput: ()->
         img = @img
-        input = @panel.querySelector('.modal-url-input')
         urlRegexp = /\b(https?|ftp|file):\/\/[\-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i
         imgTmp = new Image()
 
@@ -59,8 +64,8 @@ module.exports = class ObjectPickerPhotoURL
         preloadImage = (src) ->
             imgTmp.src = src
 
-        input.addEventListener('input',(e)->
-            newurl = input.value
+        @input.addEventListener('input',(e)->
+            newurl = e.target.value
             if urlRegexp.test(newurl)
                 url = 'api/proxy/?url=' + encodeURIComponent(newurl)
                 preloadImage(url)
