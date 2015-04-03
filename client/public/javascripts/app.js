@@ -2867,7 +2867,7 @@ attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow |
 var buf = [];
 with (locals || {}) {
 var interp;
-buf.push('<section><div class="thumbsContainer"></div><a class="btn btn-cozy right next"><p>' + escape((interp = ('more thumbs')) == null ? '' : interp) + ' &nbsp;&#12297</p></a></section>');
+buf.push('<section></section>');
 }
 return buf.join("");
 };
@@ -4595,6 +4595,77 @@ module.exports = InstallWizardView = (function(_super) {
 })(WizardView);
 });
 
+;require.register("views/long-list-images", function(exports, require, module) {
+var LongList, Photo;
+
+Photo = require('../models/photo');
+
+module.exports = LongList = (function() {
+  function LongList(viewPort$) {
+    this.viewPort$ = viewPort$;
+    this.state = {
+      selected: {},
+      selected_n: 0,
+      skip: 0,
+      percent: 0
+    };
+    this.thumbs$ = document.createElement('div');
+    this.viewPort$.appendChild(this.thumbs$);
+    this.buffer = this._initBuffer();
+    this.thumbs$.addEventListener('click', this._validateClick);
+    this._adaptBuffer();
+    ({
+      getSelectedID: function() {
+        var k, val, _ref;
+        _ref = this.state.selected;
+        for (k in _ref) {
+          val = _ref[k];
+          if (typeof val === 'object') {
+            return k;
+          }
+        }
+        return null;
+      },
+      keyHandler: function(e) {
+        return this.longList.keyHandler(e);
+      }
+    });
+  }
+
+  LongList.prototype._initBuffer = function() {
+    var img;
+    img = document.createElement('img');
+    this.thumbs$.appendChild(img);
+    return {
+      first: {
+        prev: img,
+        next: img
+      }
+    };
+    return {
+      last: {
+        prev: img,
+        next: img
+      }
+    };
+  };
+
+  LongList.prototype._adaptBuffer = function(safeZone) {
+    return safeZone = _computeSafeZone();
+  };
+
+  LongList.prototype._computeSafeZone = function() {
+    return {
+      firstRk: firstRk,
+      lastRk: lastRk
+    };
+  };
+
+  return LongList;
+
+})();
+});
+
 ;require.register("views/main", function(exports, require, module) {
 var AccountView, AppCollection, ApplicationsListView, BaseView, ConfigApplicationsView, DeviceCollection, HelpView, HomeView, IntentManager, MarketView, NavbarView, NotificationCollection, SocketListener, StackAppCollection, User, appIframeTemplate,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
@@ -5765,22 +5836,18 @@ module.exports = NotificationsView = (function(_super) {
 });
 
 ;require.register("views/object-picker-image", function(exports, require, module) {
-var ObjectPickerImage, Photo, template,
-  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+var LongList, ObjectPickerImage, Photo, template;
 
 template = require('../templates/object-picker-image')();
 
 Photo = require('../models/photo');
 
+LongList = require('views/long-list-images');
+
 module.exports = ObjectPickerImage = (function() {
   function ObjectPickerImage(objectPicker, config) {
     this.objectPicker = objectPicker;
     this.config = config;
-    this._validateClick = __bind(this._validateClick, this);
-    this._validateDblClick = __bind(this._validateDblClick, this);
-    this._listFromFiles_cb = __bind(this._listFromFiles_cb, this);
-    this._addPage = __bind(this._addPage, this);
-    this._displayMore = __bind(this._displayMore, this);
     this.state = {
       selected: {},
       selected_n: 0,
@@ -5791,20 +5858,12 @@ module.exports = ObjectPickerImage = (function() {
     this.tabLabel = 'image';
     this.tab = this._createTab();
     this.panel = $(template)[0];
-    this.thumbs$ = this.panel.querySelector('.thumbsContainer');
-    this.nextBtn$ = this.panel.querySelector('.next');
-    this.thumbs$.addEventListener('click', this._validateClick);
-    this.thumbs$.addEventListener('dblclick', this._validateDblClick);
-    this.nextBtn$.addEventListener('click', this._displayMore);
-    this._addPage(0, this.config.numPerPage);
+    this.panel.addEventListener('dblclick', this._validateDblClick);
+    this.longList = new LongList(this.panel);
   }
 
   ObjectPickerImage.prototype.getObject = function() {
-    if (this.state.selected_n === 1) {
-      return "files/screens/" + (this._getSelectedID()) + ".jpg";
-    } else {
-      return false;
-    }
+    return "files/screens/" + (this.longList.getSelectedID()) + ".jpg";
   };
 
   ObjectPickerImage.prototype.setFocusIfExpected = function() {
@@ -5812,277 +5871,14 @@ module.exports = ObjectPickerImage = (function() {
   };
 
   ObjectPickerImage.prototype.keyHandler = function(e) {
-    switch (e.which) {
-      case 27:
-        e.stopPropagation();
-        this.objectPicker.onNo();
-        break;
-      case 13:
-        e.stopPropagation();
-        this.objectPicker.onYes();
-        break;
-      case 39:
-        e.stopPropagation();
-        e.preventDefault();
-        this._selectNextThumb();
-        break;
-      case 37:
-        e.stopPropagation();
-        e.preventDefault();
-        this._selectPreviousThumb();
-        break;
-      case 38:
-        e.stopPropagation();
-        e.preventDefault();
-        this._selectThumbUp();
-        break;
-      case 40:
-        e.stopPropagation();
-        e.preventDefault();
-        this._selectThumbDown();
-        break;
-      default:
-        return false;
-    }
-    return false;
+    return this.longList.keyHandler(e);
   };
 
   ObjectPickerImage.prototype._createTab = function() {
-    var tab;
-    tab = document.createElement('div');
-    tab.textContent = this.tabLabel;
-    return tab;
-  };
-
-  ObjectPickerImage.prototype._displayMore = function() {
-    this._addPage(this.state.skip, this.config.numPerPage);
-    return this.state.skip += this.config.numPerPage;
-  };
-
-  ObjectPickerImage.prototype._addPage = function(skip, limit) {
-    Photo.listFromFiles(skip, limit, this._listFromFiles_cb);
-    return this.state.skip += this.config.numPerPage;
-  };
-
-  ObjectPickerImage.prototype._listFromFiles_cb = function(err, body) {
-    var btn, files, hasNext, pathToSocketIO, socket,
-      _this = this;
-    if ((body != null ? body.files : void 0) != null) {
-      files = body.files;
-    }
-    if (err) {
-      return console.log(err);
-    } else if (body.percent != null) {
-      this.state.percent = body.percent;
-      pathToSocketIO = "" + (window.location.pathname.substring(1)) + "socket.io";
-      socket = io.connect(window.location.origin, {
-        resource: pathToSocketIO
-      });
-      return socket.on('progress', function(event) {
-        _this.state.percent = event.percent;
-        if (_this.state.percent === 100) {
-
-        } else {
-
-        }
-      });
-    } else if ((files != null) && Object.keys(files).length === 0) {
-      this.thumbs$.innerHTML = "<p style='margin-top:20px'>" + (t('no image')) + "</p>";
-      btn = this.thumbs$.parentElement.children[1];
-      return btn.parentElement.removeChild(btn);
-    } else {
-      if ((body != null ? body.hasNext : void 0) != null) {
-        hasNext = body.hasNext;
-      } else {
-        hasNext = false;
-      }
-      this._addThumbs(body.files, hasNext);
-      if (this.config.singleSelection && this.state.selected_n === 0) {
-        return this._selectFirstThumb();
-      }
-    }
-  };
-
-  ObjectPickerImage.prototype._addThumbs = function(files, hasNext) {
-    var frag, img, p, s, _i, _len;
-    if (!hasNext) {
-      this.nextBtn$.style.display = 'none';
-    }
-    frag = document.createDocumentFragment();
-    s = '';
-    for (_i = 0, _len = files.length; _i < _len; _i++) {
-      p = files[_i];
-      img = new Image();
-      img.src = "files/thumbs/" + p.id + ".jpg";
-      img.id = "" + p.id;
-      img.title = "" + p.name;
-      frag.appendChild(img);
-    }
-    return this.thumbs$.appendChild(frag);
-  };
-
-  ObjectPickerImage.prototype._validateDblClick = function(e) {
-    if (e.target.nodeName !== "IMG") {
-      return;
-    }
-    if (this.config.singleSelection) {
-      if (typeof this.state.selected[e.target.id] !== 'object') {
-        this._toggleClicked(e.target);
-      }
-      return this.objectPicker.onYes();
-    } else {
-
-    }
-  };
-
-  ObjectPickerImage.prototype._validateClick = function(e) {
-    var el;
-    el = e.target;
-    if (el.nodeName !== "IMG") {
-      return;
-    }
-    return this._toggleClicked(el);
-  };
-
-  ObjectPickerImage.prototype._toggleClicked = function(el) {
-    var currentID, i, id, thumb, _ref, _results;
-    id = el.id;
-    if (this.config.singleSelection) {
-      currentID = this._getSelectedID();
-      if (currentID === id) {
-        return;
-      }
-      this._toggleOne(el, id);
-      _ref = this.state.selected;
-      _results = [];
-      for (i in _ref) {
-        thumb = _ref[i];
-        if (i !== id) {
-          if (typeof thumb === 'object') {
-            $(thumb.el).removeClass('selected');
-            this.state.selected[i] = false;
-            _results.push(this.state.selected_n -= 1);
-          } else {
-            _results.push(void 0);
-          }
-        } else {
-          _results.push(void 0);
-        }
-      }
-      return _results;
-    } else {
-      return this._toggleOne(el, id);
-    }
-  };
-
-  ObjectPickerImage.prototype._selectFirstThumb = function() {
-    return this._toggleClicked(this.thumbs$.firstChild);
-  };
-
-  ObjectPickerImage.prototype._selectNextThumb = function() {
-    var nextThumb, thumb;
-    thumb = this._getSelectedThumb();
-    if (thumb === null) {
-      return;
-    }
-    nextThumb = thumb.nextElementSibling;
-    if (nextThumb) {
-      return this._toggleClicked(nextThumb);
-    }
-  };
-
-  ObjectPickerImage.prototype._selectPreviousThumb = function() {
-    var prevThumb, thumb;
-    thumb = this._getSelectedThumb();
-    if (thumb === null) {
-      return;
-    }
-    prevThumb = thumb.previousElementSibling;
-    if (prevThumb) {
-      return this._toggleClicked(prevThumb);
-    }
-  };
-
-  ObjectPickerImage.prototype._selectThumbUp = function() {
-    var firstThumb, prevThumb, thumb, x;
-    thumb = this._getSelectedThumb();
-    if (thumb === null) {
-      return;
-    }
-    x = thumb.x;
-    prevThumb = thumb.previousElementSibling;
-    while (prevThumb) {
-      if (prevThumb.x === x) {
-        this._toggleClicked(prevThumb);
-        return;
-      }
-      prevThumb = prevThumb.previousElementSibling;
-    }
-    firstThumb = thumb.parentElement.firstChild;
-    if (firstThumb !== thumb) {
-      return this._toggleClicked(firstThumb);
-    }
-  };
-
-  ObjectPickerImage.prototype._selectThumbDown = function() {
-    var lastThumb, nextThumb, thumb, x;
-    thumb = this._getSelectedThumb();
-    if (thumb === null) {
-      return;
-    }
-    x = thumb.x;
-    nextThumb = thumb.nextElementSibling;
-    while (nextThumb) {
-      if (nextThumb.x === x) {
-        this._toggleClicked(nextThumb);
-        return;
-      }
-      nextThumb = nextThumb.nextElementSibling;
-    }
-    lastThumb = thumb.parentElement.lastChild;
-    if (lastThumb !== thumb) {
-      return this._toggleClicked(lastThumb);
-    }
-  };
-
-  ObjectPickerImage.prototype._toggleOne = function(thumbEl, id) {
-    if (typeof this.state.selected[id] === 'object') {
-      $(thumbEl).removeClass('selected');
-      this.state.selected[id] = false;
-      return this.state.selected_n -= 1;
-    } else {
-      $(thumbEl).addClass('selected');
-      this.state.selected[id] = {
-        id: id,
-        name: "",
-        el: thumbEl
-      };
-      return this.state.selected_n += 1;
-    }
-  };
-
-  ObjectPickerImage.prototype._getSelectedID = function() {
-    var k, val, _ref;
-    _ref = this.state.selected;
-    for (k in _ref) {
-      val = _ref[k];
-      if (typeof val === 'object') {
-        return k;
-      }
-    }
-    return null;
-  };
-
-  ObjectPickerImage.prototype._getSelectedThumb = function() {
-    var k, val, _ref;
-    _ref = this.state.selected;
-    for (k in _ref) {
-      val = _ref[k];
-      if (typeof val === 'object') {
-        return val.el;
-      }
-    }
-    return null;
+    var tab$;
+    tab$ = document.createElement('div');
+    tab$.textContent = this.tabLabel;
+    return tab$;
   };
 
   return ObjectPickerImage;
