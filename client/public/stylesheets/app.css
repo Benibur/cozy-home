@@ -3105,6 +3105,15 @@ button.btn {
 .object-picker .croperCont a.chooseAgain {
   cursor: pointer;
 }
+.long-list-thumb {
+  width: 5em;
+  height: 5em;
+  border: 1px solid #000;
+  position: absolute;
+}
+.long-list-thumb.selectedThumb {
+  color: #00f;
+}
 
 
 /*# sourceMappingURL=app.css.map*/

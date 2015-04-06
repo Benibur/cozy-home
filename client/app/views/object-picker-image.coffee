@@ -32,6 +32,10 @@ module.exports = class ObjectPickerImage
         @longList = new LongList(@panel)
 
 
+    init : () ->
+        @longList.init()
+
+
     getObject : () ->
         return "files/screens/#{@longList.getSelectedID()}.jpg"
 
