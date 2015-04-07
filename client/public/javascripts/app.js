@@ -4757,7 +4757,7 @@ module.exports = LongList = (function() {
 
   LongList.prototype.init = function() {
     window.longList = this;
-    this.activated = false;
+    this.activated = true;
     if (this.isPhotoArrayLoaded) {
       this.DOM_controler = this._DOM_controlerInit();
     } else {
@@ -4791,15 +4791,20 @@ module.exports = LongList = (function() {
     thumb = {
       prev: null,
       next: null,
-      el: thumb$
+      el: thumb$,
+      rank: null
     };
     thumb.prev = thumb;
     thumb.next = thumb;
     return {
       first: thumb,
+      firstRk: -1,
       last: thumb,
       lastRk: -1,
-      firstRk: -1
+      nextLastRk: null,
+      nextLastCol: null,
+      nextLastY: null,
+      nextLastMonthRk: null
     };
   };
 
@@ -4807,9 +4812,20 @@ module.exports = LongList = (function() {
     return this.activated = doActivate;
   };
 
+  LongList.prototype._print = function() {
+    return this._DOM_controler.print();
+  };
+
   LongList.prototype._DOM_controlerInit = function() {
-    var buffer, initViewPort_startPt, monthHeaderHeight, months, moveUp_SafeZone_startPt_ofNRows, moveUp_SafeZone_startPt_toRank, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, safeZone_endPt, safeZone_startPt, setViewPort_endPt, thumbDim, viewPortDim, _adaptBuffer, _clickHandler, _computeSafeZone, _computeSafeZone_ORIGINAL, _createThumbsBottom, _getPhotoRk_AtY, _getPhotoRk_AtY_minusN, _moveBufferToBottom, _resizeHandler, _scrollHandler,
+    var buffer, monthHeaderHeight, months, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, print, safeZone_endPt, safeZone_startPt, thumbDim, viewPortDim, _adaptBuffer, _clickHandler, _computeSafeZone, _createThumbsBottom, _initViewPort_startPt, _moveBufferToBottom, _moveUp_SafeZone_startPt_ofNRows, _moveUp_SafeZone_startPt_toRank, _resizeHandler, _scrollHandler, _setViewPort_endPt,
       _this = this;
+    print = function() {
+      console.log('safeZone_startPt', safeZone_startPt);
+      console.log('safeZone_endPt', safeZone_startPt);
+      console.log('nThumbsPerRow', nThumbsPerRow);
+      console.log('nThumbsInSafeZone', nThumbsInSafeZone);
+      return console.log('nRowsInSafeZoneMargin', nRowsInSafeZoneMargin);
+    };
     buffer = this.buffer;
     nThumbsPerRow = 0;
     nRowsInSafeZoneMargin = 0;
@@ -4903,39 +4919,16 @@ module.exports = LongList = (function() {
       }
       return _this.noScrollScheduled = true;
     };
-    _computeSafeZone_ORIGINAL = function() {
-      var firstMonthRk, firstRk, firstY, lastRk, _ref;
-      _ref = _getPhotoRk_AtY_minusN(_this.viewPort$.scrollTop, nRowsInSafeZoneMargin), firstRk = _ref[0], firstY = _ref[1], firstMonthRk = _ref[2];
-      if (firstRk < 0) {
-        firstRk = 0;
-      }
-      lastRk = firstRk + nThumbsInSafeZone - 1;
-      if (lastRk > _this.nPhotos) {
-        lastRk = _this.nPhotos;
-      }
-      console.log('safeZone:', {
-        firstRk: firstRk,
-        firstY: firstY,
-        firstMonthRk: firstMonthRk,
-        lastRk: lastRk
-      });
-      return {
-        firstRk: firstRk,
-        firstY: firstY,
-        firstMonthRk: firstMonthRk,
-        lastRk: lastRk
-      };
-    };
     _computeSafeZone = function() {
       var hasReachedLastPhoto;
-      initViewPort_startPt();
-      moveUp_SafeZone_startPt_ofNRows();
-      hasReachedLastPhoto = setViewPort_endPt();
+      _initViewPort_startPt();
+      _moveUp_SafeZone_startPt_ofNRows();
+      hasReachedLastPhoto = _setViewPort_endPt();
       if (hasReachedLastPhoto) {
-        return moveUp_SafeZone_startPt_toRank(_this.nPhotos - nThumbsInSafeZone);
+        return _moveUp_SafeZone_startPt_toRank(_this.nPhotos - nThumbsInSafeZone);
       }
     };
-    initViewPort_startPt = function() {
+    _initViewPort_startPt = function() {
       var Y, inMonthRowRk, month, monthRk, _i, _len, _ref;
       Y = _this.viewPort$.scrollTop;
       _ref = _this.months;
@@ -4954,41 +4947,37 @@ module.exports = LongList = (function() {
       safeZone_startPt.monthRk = monthRk;
       return safeZone_startPt.inMonthRowRk = inMonthRowRk;
     };
-    moveUp_SafeZone_startPt_ofNRows = function() {
-      var firstMonthRk, firstRk, firstY, found, inMonthRowRk, j, month, rowsSeen, _i, _ref;
+    _moveUp_SafeZone_startPt_ofNRows = function() {
+      var inMonthRowRk, j, month, rowsSeen, _i, _ref;
       inMonthRowRk = safeZone_startPt.inMonthRowRk - nRowsInSafeZoneMargin;
       if (inMonthRowRk >= 0) {
         month = _this.months[safeZone_startPt.monthRk];
         safeZone_startPt.rank = month.firstPhotoRk + inMonthRowRk * nThumbsPerRow;
         safeZone_startPt.y = month.y + monthHeaderHeight + inMonthRowRk * _this.thumbHeight;
-        found = true;
+        safeZone_startPt.inMonthRowRk = inMonthRowRk;
+        return;
       } else {
-        rowsSeen = safeZone_startPt.rank;
+        rowsSeen = safeZone_startPt.inMonthRowRk;
         for (j = _i = _ref = safeZone_startPt.monthRk - 1; _i >= 0; j = _i += -1) {
           month = _this.months[j];
           if (rowsSeen + month.nRows >= nRowsInSafeZoneMargin) {
             inMonthRowRk = month.nRows - nRowsInSafeZoneMargin + rowsSeen;
-            firstRk = month.firstPhotoRk + inMonthRowRk * nThumbsPerRow;
-            firstY = month.y + monthHeaderHeight + inMonthRowRk * _this.thumbHeight;
-            firstMonthRk = j;
-            found = true;
-            break;
+            safeZone_startPt.rank = month.firstPhotoRk + inMonthRowRk * nThumbsPerRow;
+            safeZone_startPt.y = month.y + monthHeaderHeight + inMonthRowRk * _this.thumbHeight;
+            safeZone_startPt.monthRk = j;
+            safeZone_startPt.inMonthRowRk = inMonthRowRk;
+            return;
           } else {
             rowsSeen += month.nRows;
           }
         }
       }
-      if (!found) {
-        firstRk = 0;
-        firstY = monthHeaderHeight;
-        firstMonthRk = 0;
-      }
-      safeZone_startPt.rank = firstRk;
-      safeZone_startPt.y = firstY;
-      safeZone_startPt.monthRk = firstMonthRk;
-      return safeZone_startPt.inMonthRowRk = inMonthRowRk;
+      safeZone_startPt.rank = 0;
+      safeZone_startPt.y = monthHeaderHeight;
+      safeZone_startPt.monthRk = 0;
+      return safeZone_startPt.inMonthRowRk = 0;
     };
-    setViewPort_endPt = function() {
+    _setViewPort_endPt = function() {
       var lastRk;
       lastRk = safeZone_startPt.rank + nThumbsInSafeZone - 1;
       if (lastRk >= _this.nPhotos) {
@@ -4999,7 +4988,7 @@ module.exports = LongList = (function() {
       safeZone_endPt.rank = lastRk;
       return false;
     };
-    moveUp_SafeZone_startPt_toRank = function() {
+    _moveUp_SafeZone_startPt_toRank = function() {
       var inMonthRk, inMonthRowRk, month, monthRk, rk, thumbsSeen, thumbsTarget, _i;
       months = _this.months;
       monthRk = months.length - 1;
@@ -5013,71 +5002,15 @@ module.exports = LongList = (function() {
         }
       }
       rk = _this.nPhotos - thumbsTarget;
-      inMonthRk = rk - month.firstRk;
-      inMonthRowRk = Math.ceil(inMonthRk / nThumbsPerRow);
+      inMonthRk = rk - month.firstPhotoRk;
+      inMonthRowRk = Math.floor(inMonthRk / nThumbsPerRow);
       safeZone_startPt.monthRk = monthRk;
       safeZone_startPt.inMonthRowRk = inMonthRowRk;
       safeZone_startPt.rank = rk;
-      return safeZone_startPt.y = month.y + inMonthRowRk * _this.thumbHeight;
-    };
-    _getPhotoRk_AtY = function(Y) {
-      var month, monthRk, rowLocalRk, _i, _len, _ref;
-      _ref = _this.months;
-      for (monthRk = _i = 0, _len = _ref.length; _i < _len; monthRk = ++_i) {
-        month = _ref[monthRk];
-        if (month.yBottom > Y) {
-          break;
-        }
-      }
-      rowLocalRk = Math.floor((Y - month.y - monthHeaderHeight) / _this.thumbHeight);
-      if (rowLocalRk < 0) {
-        rowLocalRk = 0;
-      }
-      return [month.firstPhotoRk + rowLocalRk * nThumbsPerRow, month.y + monthHeaderHeight + rowLocalRk * _this.thumbHeight, monthRk];
-    };
-    _getPhotoRk_AtY_minusN = function(Y, minusN) {
-      var firstMonthRk, firstRk, firstY, i, j, month, rowY, row_minuxN, rowsSeen, _i, _j, _len, _ref, _ref1;
-      _ref = _this.months;
-      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-        month = _ref[i];
-        if (month.yBottom > Y) {
-          break;
-        }
-      }
-      rowY = Math.floor((Y - month.y - monthHeaderHeight) / _this.thumbHeight);
-      if (rowY < 0) {
-        rowY = 0;
-      }
-      row_minuxN = rowY - minusN;
-      if (row_minuxN >= 0) {
-        firstRk = month.firstPhotoRk + row_minuxN * nThumbsPerRow;
-        firstY = month.y + monthHeaderHeight + row_minuxN * _this.thumbHeight;
-        firstMonthRk = i;
-      } else {
-        rowsSeen = rowY;
-        for (j = _j = _ref1 = i - 1; _j >= 0; j = _j += -1) {
-          month = _this.months[j];
-          if (rowsSeen + month.nRows >= minusN) {
-            row_minuxN = month.nRows - minusN + rowsSeen;
-            firstRk = month.firstPhotoRk + row_minuxN * nThumbsPerRow;
-            firstY = month.y + monthHeaderHeight + row_minuxN * _this.thumbHeight;
-            firstMonthRk = j;
-            break;
-          } else {
-            rowsSeen += month.nRows;
-          }
-        }
-      }
-      if (!firstRk) {
-        firstRk = 0;
-        firstY = monthHeaderHeight;
-        firstMonthRk = 0;
-      }
-      return [firstRk, firstY, firstMonthRk];
+      return safeZone_startPt.y = month.y + monthHeaderHeight + inMonthRowRk * _this.thumbHeight;
     };
     _createThumbsBottom = function(nToCreate, startRk, startCol, startY, monthRk) {
-      var bfr, col, localRk, month, rk, rowY, style, thumb, thumb$, _i, _ref;
-      bfr = _this.buffer;
+      var col, localRk, month, rk, rowY, style, thumb, thumb$, _i, _ref;
       rowY = startY;
       col = startCol;
       month = _this.months[monthRk];
@@ -5086,14 +5019,14 @@ module.exports = LongList = (function() {
         thumb$ = document.createElement('div');
         thumb$.setAttribute('class', 'long-list-thumb');
         thumb = {
-          next: bfr.last,
-          prev: bfr.first,
+          next: buffer.last,
+          prev: buffer.first,
           el: thumb$,
           rank: rk
         };
-        bfr.first.next = thumb;
-        bfr.last.prev = thumb;
-        bfr.last = thumb;
+        buffer.first.next = thumb;
+        buffer.last.prev = thumb;
+        buffer.last = thumb;
         thumb$.textContent = rk + ' ' + month.month.slice(0, 4) + '-' + month.month.slice(4);
         style = thumb$.style;
         style.top = rowY + 'px';
@@ -5115,27 +5048,26 @@ module.exports = LongList = (function() {
           }
         }
       }
-      bfr.lastRk = rk - 1;
-      bfr.nextLastRk = rk;
-      bfr.nextLastCol = col;
-      bfr.nextLastY = rowY;
-      bfr.nextLastMonthRk = monthRk;
+      buffer.lastRk = rk - 1;
+      buffer.nextLastRk = rk;
+      buffer.nextLastCol = col;
+      buffer.nextLastY = rowY;
+      buffer.nextLastMonthRk = monthRk;
       return [rowY, col, monthRk];
     };
     _moveBufferToBottom = function(nToMove, startRk, startCol, startY, monthRk) {
-      var bfr, col, localRk, month, rk, rowY, style, thumb$, _i, _ref;
-      bfr = _this.buffer;
+      var col, localRk, month, rk, rowY, style, thumb$, _i, _ref;
       rowY = startY;
       col = startCol;
       month = _this.months[monthRk];
       localRk = startRk - month.firstPhotoRk;
       for (rk = _i = startRk, _ref = startRk + nToMove - 1; _i <= _ref; rk = _i += 1) {
-        thumb$ = bfr.first.el;
-        bfr.last = bfr.first;
-        bfr.first = bfr.first.prev;
-        bfr.firstRk = bfr.first.rank;
-        thumb$.textContent = rk + ' ' + month.month.slice(0, 4) + '-' + month.month.slice(4) + ' (moved from top to bottom)';
-        bfr.last.rank = rk;
+        thumb$ = buffer.first.el;
+        buffer.last = buffer.first;
+        buffer.first = buffer.first.prev;
+        buffer.firstRk = buffer.first.rank;
+        thumb$.textContent = rk + ' ' + month.month.slice(0, 4) + '-' + month.month.slice(4);
+        buffer.last.rank = rk;
         style = thumb$.style;
         style.top = rowY + 'px';
         style.left = col * _this.thumbWidth + 'px';
@@ -5154,11 +5086,11 @@ module.exports = LongList = (function() {
           }
         }
       }
-      bfr.lastRk = rk - 1;
-      bfr.nextLastRk = rk;
-      bfr.nextLastCol = col;
-      bfr.nextLastY = rowY;
-      return bfr.nextLastMonthRk = monthRk;
+      buffer.lastRk = rk - 1;
+      buffer.nextLastRk = rk;
+      buffer.nextLastCol = col;
+      buffer.nextLastY = rowY;
+      return buffer.nextLastMonthRk = monthRk;
     };
     thumbDim = this.buffer.first.el.getBoundingClientRect();
     this.thumbWidth = thumbDim.width;
@@ -5168,7 +5100,8 @@ module.exports = LongList = (function() {
     this.thumbs$.addEventListener('click', _clickHandler);
     this.viewPort$.addEventListener('scroll', _scrollHandler);
     return {
-      _adaptBuffer: _adaptBuffer
+      _adaptBuffer: _adaptBuffer,
+      print: print
     };
   };
 
