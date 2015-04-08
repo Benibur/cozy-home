@@ -304,3 +304,4 @@ module.exports =
     "ObjPicker upload btn"    : "Sélectionnez un fichier local"
     "more thumbs"             : "Plus de photo"
     "drop a file"             : "Glissez et déposez un fichier"
+    "url of an image"         : "URL d'une image sur le web"

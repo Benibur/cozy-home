@@ -1,5 +1,5 @@
-template    = require('../templates/object-picker-photoURL')()
-proxyclient = require('lib/proxyclient')
+template    = require '../templates/object-picker-photoURL'
+proxyclient = require 'lib/proxyclient'
 
 
 module.exports = class ObjectPickerPhotoURL
@@ -10,7 +10,7 @@ module.exports = class ObjectPickerPhotoURL
         @name     = 'urlPhotoUpload'
         @tabLabel = 'url'
         @tab      = @_createTab()
-        @panel    = $(template)[0]
+        @panel    = $(template())[0]
         @img      = @panel.querySelector('.url-preview')
         @blocContainer=@panel.querySelector('.bloc-container')
         @url      = undefined

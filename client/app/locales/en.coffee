@@ -295,3 +295,4 @@ module.exports =
     "no image"                : "There is no image on your Cozy"
     "ObjPicker upload btn"    : "Upload a local file"
     "drop a file"             : "Drag & drop a file"
+    "url of an image"         : "URL of an image on the web"

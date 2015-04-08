@@ -2954,7 +2954,8 @@ button.btn {
   flex-grow: 1;
 }
 .object-picker .thumbPicker {
-  overflow: auto;
+  overflow-y: scroll;
+  overflow-x: hidden;
 }
 .object-picker .photoUpload[aria-hidden="false"] {
   display: flex;
@@ -3113,6 +3114,14 @@ button.btn {
 }
 .long-list-thumb.selectedThumb {
   color: #00f;
+  border-color: #00f;
+  border-width: 4px;
+}
+.long-list-month-label {
+  position: absolute;
+  color: #fff;
+  z-index: 1;
+  background-color: #000;
 }
 
 

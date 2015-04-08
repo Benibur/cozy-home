@@ -1,4 +1,4 @@
-template    = require('../templates/object-picker-upload')()
+template    = require '../templates/object-picker-upload'
 
 
 module.exports = class ObjectPickerUpload
@@ -12,7 +12,7 @@ module.exports = class ObjectPickerUpload
         @name     = 'photoUpload'
         @tabLabel = 'upload'
         @tab      = @_createTab()
-        @panel    = $(template)[0]
+        @panel    = $(template())[0]
         # @uploader = @panel.querySelector('.modal-uploadBtn')
         # bind events
         @_bindFileDropZone()

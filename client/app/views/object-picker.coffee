@@ -1,5 +1,5 @@
 Modal                = require '../views/modal'
-template             = require('../templates/object-picker')()
+template             = require '../templates/object-picker'
 ObjectPickerPhotoURL = require './object-picker-photoURL'
 ObjectPickerUpload   = require './object-picker-upload'
 ObjectPickerImage    = require './object-picker-image'
@@ -13,21 +13,20 @@ module.exports = class PhotoPickerCroper extends Modal
 
 # Class attributes
 
-    id                : 'object-picker'
-    title             :  'pick from files' # todo bja : t undefined ??
-    # title             : t 'pick from files' # todo bja : t undefined ??
 
 # Methods
 
     events: -> _.extend super,
-        'click    a.next'           : 'displayMore'
-        'click    a.prev'           : 'displayPrevPage'
-        'click    .chooseAgain'     : '_chooseAgain'
+        'click    a.next'       : 'displayMore'
+        'click    a.prev'       : 'displayPrevPage'
+        'click    .chooseAgain' : '_chooseAgain'
 
 
     initialize: (params, cb) ->
         ####
         # init config & state and super
+        @id     = 'object-picker'
+        @title  = t('pick from files')
         @config =
             cssSpaceName    : "object-picker"
             singleSelection : true # tells if user can select one or more photo
@@ -45,7 +44,7 @@ module.exports = class PhotoPickerCroper extends Modal
         ####
         # get elements
         body              = @el.querySelector('.modalCY-body')
-        body.innerHTML    = template
+        body.innerHTML    = template()
         @body             = body
         @objectPickerCont = body.querySelector('.objectPickerCont')
         @tablist          = body.querySelector('[role=tablist]')

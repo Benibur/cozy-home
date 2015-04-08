@@ -1,4 +1,4 @@
-template = require('../templates/object-picker-image')()
+template = require '../templates/object-picker-image'
 Photo    = require '../models/photo'
 LongList = require 'views/long-list-images'
 
@@ -21,7 +21,7 @@ module.exports = class ObjectPickerImage
         ####
         # get elements (name ends with '$')
         @tab      = @_createTab()
-        @panel    = $(template)[0]
+        @panel    = $(template())[0]
         # @thumbs$  = @panel.querySelector('.thumbsContainer') # the div containing photos
         ####
         # bind events
