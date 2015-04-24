@@ -6,7 +6,7 @@ module.exports = File = americano.getModel 'File',
     path              : String
     lastModification  : String
     binary            : Object
-    class              : String
+    class             : String
 
 File.imageByDate = (options, callback) ->
     File.request 'imageByDate', options, callback

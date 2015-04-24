@@ -2089,129 +2089,7 @@ Photo.listFromFiles = function(skip, limit, callback) {
 };
 
 Photo.getPhotoArray = function(callback) {
-  return callback([
-    {
-      nPhotos: 3,
-      month: "201504"
-    }, {
-      nPhotos: 30,
-      month: "201503"
-    }, {
-      nPhotos: 10,
-      month: "201502"
-    }, {
-      nPhotos: 5,
-      month: "201501"
-    }, {
-      nPhotos: 20,
-      month: "201412"
-    }, {
-      nPhotos: 500,
-      month: "201411"
-    }, {
-      nPhotos: 100,
-      month: "201410"
-    }, {
-      nPhotos: 30,
-      month: "201409"
-    }, {
-      nPhotos: 30,
-      month: "201408"
-    }, {
-      nPhotos: 400,
-      month: "201407"
-    }, {
-      nPhotos: 1200,
-      month: "201406"
-    }, {
-      nPhotos: 30,
-      month: "201405"
-    }, {
-      nPhotos: 300,
-      month: "201404"
-    }, {
-      nPhotos: 100,
-      month: "201403"
-    }, {
-      nPhotos: 600,
-      month: "201402"
-    }, {
-      nPhotos: 300,
-      month: "201401"
-    }, {
-      nPhotos: 300,
-      month: "201312"
-    }, {
-      nPhotos: 300,
-      month: "201311"
-    }, {
-      nPhotos: 300,
-      month: "201310"
-    }, {
-      nPhotos: 300,
-      month: "201309"
-    }, {
-      nPhotos: 300,
-      month: "201308"
-    }, {
-      nPhotos: 300,
-      month: "201307"
-    }, {
-      nPhotos: 300,
-      month: "201306"
-    }, {
-      nPhotos: 300,
-      month: "201305"
-    }, {
-      nPhotos: 300,
-      month: "201304"
-    }, {
-      nPhotos: 300,
-      month: "201303"
-    }, {
-      nPhotos: 300,
-      month: "201302"
-    }, {
-      nPhotos: 300,
-      month: "201301"
-    }, {
-      nPhotos: 300,
-      month: "201212"
-    }, {
-      nPhotos: 300,
-      month: "201211"
-    }, {
-      nPhotos: 300,
-      month: "201210"
-    }, {
-      nPhotos: 300,
-      month: "201209"
-    }, {
-      nPhotos: 300,
-      month: "201208"
-    }, {
-      nPhotos: 300,
-      month: "201207"
-    }, {
-      nPhotos: 300,
-      month: "201206"
-    }, {
-      nPhotos: 300,
-      month: "201205"
-    }, {
-      nPhotos: 300,
-      month: "201204"
-    }, {
-      nPhotos: 300,
-      month: "201203"
-    }, {
-      nPhotos: 30,
-      month: "201202"
-    }, {
-      nPhotos: 30,
-      month: "201201"
-    }
-  ]);
+  return client.get("files/photo/monthdistribution", callback);
 };
 
 Photo.makeFromFile = function(fileid, attr, callback) {
@@ -4752,7 +4630,8 @@ module.exports = LongList = (function() {
     this.viewPort$.style.position = 'relative';
     this.thumbs$.style.position = 'absolute';
     this.buffer = this._initBuffer();
-    Photo.getPhotoArray(function(res) {
+    Photo.getPhotoArray(function(error, res) {
+      console.log('longlist get an answer!', res);
       _this.months = res;
       if (_this.isInited) {
         _this.DOM_controler = _this._DOM_controlerInit();
@@ -4923,6 +4802,9 @@ module.exports = LongList = (function() {
           targetY = safeZone.firstY;
         }
         if (nToCreate > 0) {
+          Photo.listFromFiles(targetRk, nToCreate, function(res, error) {
+            return console.log(res);
+          });
           _ref = _createThumbsBottom(nToCreate, targetRk, targetCol, targetY, targetMonthRk), targetY = _ref[0], targetCol = _ref[1], targetMonthRk = _ref[2];
           targetRk += nToCreate;
         }

@@ -71,6 +71,8 @@ module.exports =
         get: file.thumb
     'files/screens/:fileid':
         get: file.screen
+    'files/photo/monthdistribution':
+        get: file.photo_monthdistribution
 
     'api/proxy/':
         get: proxy.get

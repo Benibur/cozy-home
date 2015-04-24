@@ -50,6 +50,21 @@ module.exports.list = (req, res, next) ->
                     hasNext = false
                 res.send {files: photos, hasNext: hasNext}, 200
 
+module.exports.photo_monthdistribution = (req, res, next) ->
+    res.send [
+                    nPhotos : 3 , month   : "201504"
+                ,
+                    nPhotos : 30 , month   : "201503"
+                ,
+                    nPhotos : 10 , month   : "201502"
+                ,
+                    nPhotos : 5 , month   : "201501"
+                ,
+                    nPhotos : 20 , month   : "201412"
+                ,
+                    nPhotos : 500 , month   : "201411"
+            ], 200
+
 
 # Return thumb for given file.
 module.exports.thumb = (req, res, next) ->

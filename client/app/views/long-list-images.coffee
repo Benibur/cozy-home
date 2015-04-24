@@ -111,7 +111,8 @@ module.exports = class LongList
         ####
         # adapt buffer to the initial geometry when we receive the array of
         # photos
-        Photo.getPhotoArray (res) =>
+        Photo.getPhotoArray (error, res) =>
+            console.log 'longlist get an answer!', res
             @months  = res
             if @isInited
                 ####
