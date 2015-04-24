@@ -326,6 +326,10 @@ module.exports = class LongList
                     targetY       = safeZone.firstY
 
                 if nToCreate > 0
+                    Photo.listFromFiles targetRk, nToCreate, (res, error) ->
+                        console.log res
+
+
                     [targetY, targetCol, targetMonthRk] =
                         _createThumbsBottom( nToCreate     ,
                                               targetRk     ,
