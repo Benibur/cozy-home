@@ -45,8 +45,10 @@ module.exports =
 
     'api/users': get: account.users
     'api/user': post: account.updateAccount
+
     'api/instances': get: account.instances
     'api/instance': post: account.updateInstance
+
     'api/preference':
         get: account.getUserPreference
         post: account.setUserPreference
@@ -60,19 +62,20 @@ module.exports =
         get: notifications.show
         delete: notifications.delete
 
+    'api/proxy/':
+        get: proxy.get
+
     'notifications': post: notifications.create
     'notifications/:app/:ref':
         put: notifications.updateOrCreate
         delete: notifications.destroy
 
-    'files/range/:skip/:limit':
-        get: file.list
-    'files/thumbs/:fileid':
-        get: file.thumb
-    'files/screens/:fileid':
-        get: file.screen
+    'files/photo/range/:skip/:limit':
+        get: file.photoRange
+    'files/photo/thumbs/:fileid':
+        get: file.photoThumb
+    'files/photo/screens/:fileid':
+        get: file.photoScreen
     'files/photo/monthdistribution':
-        get: file.photo_monthdistribution
+        get: file.photoMonthDistribution
 
-    'api/proxy/':
-        get: proxy.get

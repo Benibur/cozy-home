@@ -1,11 +1,9 @@
 File  = require '../models/file'
-Photo = require '../models/photo'
-async = require 'async'
-fs    = require 'fs'
-im    = require 'imagemagick'
 onThumbCreation = require('../../init').onThumbCreation
 
-# Get given file, returns 404 if photo is not found.
+###*
+ * Get given file, returns 404 if photo is not found.
+###
 module.exports.fetch = (req, res, next, id) ->
     id = id.substring 0, id.length - 4 if id.indexOf('.jpg') > 0
     File.find id, (err, file) =>
@@ -15,10 +13,12 @@ module.exports.fetch = (req, res, next, id) ->
         req.file = file
         next()
 
-# Returns a list of n photo (from newest to oldest )
-# skip : the number of the first photo of the view not to be returned
-# limit : the max number of photo to return
-module.exports.list = (req, res, next) ->
+###*
+ * Returns a list of n photo (from newest to oldest )
+ * skip : the number of the first photo of the view not to be returned
+ * limit : the max number of photo to return
+###
+module.exports.photoRange = (req, res, next) ->
     if req.params.skip?
         skip = parseInt(req.params.skip)
     else
@@ -48,99 +48,39 @@ module.exports.list = (req, res, next) ->
                     hasNext = true
                 else
                     hasNext = false
-                res.send {files: photos, hasNext: hasNext}, 200
+                res.send {files: photos, firstRank: skip}, 200
 
-module.exports.photo_monthdistribution = (req, res, next) ->
-    res.send [
-                    nPhotos : 3 , month   : "201504"
-                ,
-                    nPhotos : 30 , month   : "201503"
-                ,
-                    nPhotos : 10 , month   : "201502"
-                ,
-                    nPhotos : 5 , month   : "201501"
-                ,
-                    nPhotos : 20 , month   : "201412"
-                ,
-                    nPhotos : 500 , month   : "201411"
-            ], 200
+###*
+ * Gets an array that gives the number of photo for each month, from the most
+ * recent month to the oldest
+ * [{nPhotos:`number`, month:'YYYYMM'}, ...]
+###
+module.exports.photoMonthDistribution = (req, res, next) ->
+    File.imageByMonth {group : true , group_level : 2 , reduce: true }, (error, distribution_raw) ->
+        distribution = []
+        for k in [distribution_raw.length-1..0]
+            month = distribution_raw[k]
+            yearStr   = month.key[0] + ''
+            monthStr  = month.key[1] + ''
+            if monthStr.length == 1
+                monthStr = '0' + monthStr
+            distribution.push(nPhotos:month.value, month:yearStr+monthStr)
+        res.send(distribution, 200)
 
-
-# Return thumb for given file.
-module.exports.thumb = (req, res, next) ->
+###*
+ * Returns thumb for given file.
+###
+module.exports.photoThumb = (req, res, next) ->
     which = if req.file.binary.thumb then 'thumb' else 'file'
     stream = req.file.getBinary which, (err) ->
         return next err if err
     stream.pipe res
 
-
-# Return screen for given file.
-module.exports.screen = (req, res, next) ->
+###*
+ * Returns screen for given file.
+###
+module.exports.photoScreen = (req, res, next) ->
     which = if req.file.binary.screen then 'screen' else 'file'
     stream = req.file.getBinary which, (err) ->
         return next err if err
     stream.pipe res
-
-
-# Resize picture
-resize = (raw, photo, name, callback) ->
-    options = if name is 'thumb'
-        mode: 'crop'
-        width: 300
-        height: 300
-
-    else #screen
-        mode: 'resize'
-        width: 1200
-        height: 800
-
-    options.srcPath = raw
-    options.dstPath = "/tmp/#{photo.id}2"
-
-    # create files
-    fs.open options.dstPath, 'w', (err) ->
-        if err
-            callback err
-        else
-            # create a resized file and push it to db
-            im[options.mode] options, (err, stdout, stderr) ->
-                return callback err if err
-                photo.attachBinary options.dstPath, {name}, (err) ->
-                    fs.unlink options.dstPath, ->
-                        callback err
-
-
-module.exports.createPhoto = (req, res, next) ->
-    file = req.file
-
-    return next new Error('no binary') unless file.binary?
-
-    photo =
-        date         : file.lastModification
-        title        : ""
-        description  : ""
-        orientation  : 1
-        albumid      : "#{req.body.albumid}"
-        binary       : file.binary
-
-    Photo.create photo, (err, photo) ->
-        return next err if err
-
-        rawFile = "/tmp/#{photo.id}"
-        fs.openSync rawFile, 'w'
-        stream = file.getBinary 'file', (err) ->
-            return next err if err
-        stream.pipe fs.createWriteStream rawFile
-        stream.on 'error', next
-
-        stream.on 'end', =>
-            if not photo.binary.thumb?
-                resize rawFile, photo, 'thumb', (err) ->
-                    return next err if err
-                    resize rawFile, photo, 'screen', (err) ->
-                        fs.unlink rawFile, ->
-                            res.send 201, photo
-            else
-                resize rawFile, photo, 'screen', (err) ->
-                    fs.unlink rawFile, ->
-                        res.send 201, photo

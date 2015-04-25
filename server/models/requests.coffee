@@ -37,4 +37,12 @@ module.exports =
         all: americano.defaultRequests.all
 
     file:
-        imageByDate: imageByDate
+        imageByDate : imageByDate
+        imageByMonth:
+            map: (doc) ->
+                if doc.class is "image" and doc.binary?.file?
+                    d = new Date(doc.lastModification)
+                    emit([d.getFullYear(),d.getMonth()+1,d.getDate()], doc._id)
+            reduce: '_count'
+
+

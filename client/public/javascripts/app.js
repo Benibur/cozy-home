@@ -806,7 +806,8 @@ module.exports = new SocketListener();
 });
 
 ;require.register("lib/templates/wizard", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2084,12 +2085,12 @@ module.exports = Photo = (function(_super) {
 
 })(Backbone.Model);
 
-Photo.listFromFiles = function(skip, limit, callback) {
-  return client.get("files/range/" + skip + "/" + limit, callback);
+Photo.getMonthdistribution = function(callback) {
+  return client.get("files/photo/monthdistribution", callback);
 };
 
-Photo.getPhotoArray = function(callback) {
-  return client.get("files/photo/monthdistribution", callback);
+Photo.listFromFiles = function(skip, limit, callback) {
+  return client.get("files/photo/range/" + skip + "/" + limit, callback);
 };
 
 Photo.makeFromFile = function(fileid, attr, callback) {
@@ -2377,7 +2378,8 @@ module.exports = MainRouter = (function(_super) {
 });
 
 ;require.register("templates/account", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2455,7 +2457,8 @@ return buf.join("");
 });
 
 require.register("templates/application_iframe", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2469,7 +2472,8 @@ return buf.join("");
 });
 
 require.register("templates/config_application", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2513,7 +2517,8 @@ return buf.join("");
 });
 
 require.register("templates/config_application_list", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2524,7 +2529,8 @@ return buf.join("");
 });
 
 require.register("templates/config_applications", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2566,7 +2572,8 @@ return buf.join("");
 });
 
 require.register("templates/config_device", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2584,7 +2591,8 @@ return buf.join("");
 });
 
 require.register("templates/config_device_list", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2595,7 +2603,8 @@ return buf.join("");
 });
 
 require.register("templates/help", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2625,7 +2634,8 @@ return buf.join("");
 });
 
 require.register("templates/help_url", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2642,7 +2652,8 @@ return buf.join("");
 });
 
 require.register("templates/home", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2666,7 +2677,8 @@ return buf.join("");
 });
 
 require.register("templates/home_application", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2681,7 +2693,8 @@ return buf.join("");
 });
 
 require.register("templates/home_application_widget", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2695,7 +2708,8 @@ return buf.join("");
 });
 
 require.register("templates/layout", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2728,7 +2742,8 @@ return buf.join("");
 });
 
 require.register("templates/market", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2752,7 +2767,8 @@ return buf.join("");
 });
 
 require.register("templates/market_application", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2781,7 +2797,8 @@ return buf.join("");
 });
 
 require.register("templates/menu_application", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2795,7 +2812,8 @@ return buf.join("");
 });
 
 require.register("templates/menu_applications", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2807,7 +2825,8 @@ return buf.join("");
 });
 
 require.register("templates/navbar", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2822,7 +2841,8 @@ return buf.join("");
 });
 
 require.register("templates/navbar_app_btn", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2838,7 +2858,8 @@ return buf.join("");
 });
 
 require.register("templates/notification", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2850,7 +2871,8 @@ return buf.join("");
 });
 
 require.register("templates/notifications", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2868,7 +2890,8 @@ return buf.join("");
 });
 
 require.register("templates/object-picker-image", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2880,7 +2903,8 @@ return buf.join("");
 });
 
 require.register("templates/object-picker-photoURL", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2894,7 +2918,8 @@ return buf.join("");
 });
 
 require.register("templates/object-picker-upload", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2906,7 +2931,8 @@ return buf.join("");
 });
 
 require.register("templates/object-picker", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2918,7 +2944,8 @@ return buf.join("");
 });
 
 require.register("templates/popover_description", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2948,7 +2975,8 @@ return buf.join("");
 });
 
 require.register("templates/popover_permissions", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -2981,7 +3009,8 @@ return buf.join("");
 });
 
 require.register("templates/tutorial", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -3056,7 +3085,8 @@ return buf.join("");
 });
 
 require.register("templates/update_stack_modal", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge
+/**/) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
@@ -4630,7 +4660,7 @@ module.exports = LongList = (function() {
     this.viewPort$.style.position = 'relative';
     this.thumbs$.style.position = 'absolute';
     this.buffer = this._initBuffer();
-    Photo.getPhotoArray(function(error, res) {
+    Photo.getMonthdistribution(function(error, res) {
       console.log('longlist get an answer!', res);
       _this.months = res;
       if (_this.isInited) {
@@ -4669,10 +4699,9 @@ module.exports = LongList = (function() {
 
   LongList.prototype._initBuffer = function() {
     var thumb, thumb$;
-    thumb$ = document.createElement('div');
+    thumb$ = document.createElement('img');
     this.thumbs$.appendChild(thumb$);
     thumb$.setAttribute('class', 'long-list-thumb');
-    this.nThumbs = 1;
     thumb = {
       prev: null,
       next: null,
@@ -4686,6 +4715,7 @@ module.exports = LongList = (function() {
       firstRk: -1,
       last: thumb,
       lastRk: -1,
+      nThumbs: 1,
       nextLastRk: null,
       nextLastCol: null,
       nextLastY: null,
@@ -4694,7 +4724,7 @@ module.exports = LongList = (function() {
   };
 
   LongList.prototype._DOM_controlerInit = function() {
-    var buffer, cellPadding, colWidth, marginLeft, monthHeaderHeight, monthTopPadding, months, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, rowHeight, safeZone_endPt, safeZone_startPt, thumbDim, thumbHeight, thumbWidth, viewPortDim, _adaptBuffer, _clickHandler, _computeSafeZone, _createThumbsBottom, _getBufferNextFirst, _getBufferNextLast, _initViewPort_startPt, _insertMonthLabel, _moveBufferToBottom, _moveBufferToTop, _moveUp_SafeZone_startPt_ofNRows, _moveUp_SafeZone_startPt_ofNThumbs, _moveUp_SafeZone_startPt_toRank, _resizeHandler, _scrollHandler, _setSafeZone_endPt,
+    var buffer, cellPadding, colWidth, marginLeft, monthHeaderHeight, monthTopPadding, months, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, rowHeight, safeZone_endPt, safeZone_startPt, thumbDim, thumbHeight, thumbWidth, viewPortDim, _adaptBuffer, _clickHandler, _computeSafeZone, _createThumbsBottom, _getBufferNextFirst, _getBufferNextLast, _initViewPort_startPt, _insertMonthLabel, _moveBufferToBottom, _moveBufferToTop, _moveUp_SafeZone_startPt_ofNRows, _moveUp_SafeZone_startPt_ofNThumbs, _moveUp_SafeZone_startPt_toRank, _resizeHandler, _scrollHandler, _setSafeZone_endPt, _updateThumb,
       _this = this;
     months = this.months;
     buffer = this.buffer;
@@ -4766,6 +4796,7 @@ module.exports = LongList = (function() {
       var bufr, nAvailable, nToCreate, nToFind, nToMove, safeZone, targetCol, targetMonthRk, targetRk, targetY, _ref, _ref1;
       _this.noScrollScheduled = true;
       bufr = buffer;
+      window.buffer = buffer;
       _computeSafeZone();
       safeZone = {
         firstRk: safeZone_startPt.rank,
@@ -4776,18 +4807,19 @@ module.exports = LongList = (function() {
         endMonthRk: safeZone_endPt.monthRk,
         endY: safeZone_endPt.y
       };
-      console.log(safeZone);
-      console.log(bufr);
+      console.log('======_adaptBuffer==beginning=======');
+      console.log('safeZone', safeZone);
+      console.log('bufr', bufr);
       if (safeZone.lastRk > bufr.lastRk) {
         nToFind = Math.min(safeZone.lastRk - bufr.lastRk, nThumbsInSafeZone);
         nAvailable = safeZone.firstRk - bufr.firstRk;
         if (nAvailable < 0) {
           nAvailable = 0;
         }
-        if (nAvailable > _this.nThumbs) {
-          nAvailable = _this.nThumbs;
+        if (nAvailable > bufr.nThumbs) {
+          nAvailable = bufr.nThumbs;
         }
-        nToCreate = nToFind - nAvailable;
+        nToCreate = Math.max(nToFind - nAvailable, 0);
         nToMove = nToFind - nToCreate;
         if (safeZone.firstRk < bufr.nextLastRk) {
           _getBufferNextLast();
@@ -4797,19 +4829,23 @@ module.exports = LongList = (function() {
           targetY = bufr.nextLastY;
         } else {
           targetRk = safeZone.firstRk;
-          targetCol = 0;
           targetMonthRk = safeZone.firstMonthRk;
+          targetCol = 0;
           targetY = safeZone.firstY;
         }
-        if (nToCreate > 0) {
-          Photo.listFromFiles(targetRk, nToCreate, function(res, error) {
-            return console.log(res);
+        if (nToFind > 0) {
+          Photo.listFromFiles(targetRk, nToFind, function(error, res) {
+            return _updateThumb(res.files, res.firstRank);
           });
+        }
+        if (nToCreate > 0) {
+          console.log("nToCreate", nToCreate);
+          console.log("targetRk", targetRk);
           _ref = _createThumbsBottom(nToCreate, targetRk, targetCol, targetY, targetMonthRk), targetY = _ref[0], targetCol = _ref[1], targetMonthRk = _ref[2];
           targetRk += nToCreate;
         }
         if (nToMove > 0) {
-          return _moveBufferToBottom(nToMove, targetRk, targetCol, targetY, targetMonthRk);
+          _moveBufferToBottom(nToMove, targetRk, targetCol, targetY, targetMonthRk);
         }
       } else if (safeZone.firstRk < bufr.firstRk) {
         nToFind = Math.min(bufr.firstRk - safeZone.firstRk, nThumbsInSafeZone);
@@ -4817,10 +4853,10 @@ module.exports = LongList = (function() {
         if (nAvailable < 0) {
           nAvailable = 0;
         }
-        if (nAvailable > _this.nThumbs) {
-          nAvailable = _this.nThumbs;
+        if (nAvailable > bufr.nThumbs) {
+          nAvailable = bufr.nThumbs;
         }
-        nToCreate = nToFind - nAvailable;
+        nToCreate = Math.max(nToFind - nAvailable, 0);
         nToMove = nToFind - nToCreate;
         if (safeZone.lastRk >= bufr.firstRk) {
           _getBufferNextFirst();
@@ -4834,15 +4870,45 @@ module.exports = LongList = (function() {
           targetMonthRk = safeZone.endMonthRk;
           targetY = safeZone.endY;
         }
+        if (nToFind > 0) {
+          Photo.listFromFiles(targetRk - nToFind + 1, nToFind, function(error, res) {
+            return _updateThumb(res.files, res.firstRank);
+          });
+        }
         if (nToCreate > 0) {
           throw new Error('It should not be used in the current implementation');
           _ref1 = _createThumbsTop(nToCreate, targetRk, targetCol, targetY, targetMonthRk), targetY = _ref1[0], targetCol = _ref1[1], targetMonthRk = _ref1[2];
           targetRk += nToCreate;
         }
         if (nToMove > 0) {
-          return _moveBufferToTop(nToMove, targetRk, targetCol, targetY, targetMonthRk);
+          _moveBufferToTop(nToMove, targetRk, targetCol, targetY, targetMonthRk);
         }
       }
+      console.log('======_adaptBuffer==ending=');
+      console.log('safeZone', safeZone);
+      console.log('bufr', bufr);
+      return console.log('======_adaptBuffer==ended=======');
+    };
+    _updateThumb = function(files, firstRank) {
+      var bufr, file, first, last, thumb;
+      bufr = buffer;
+      thumb = bufr.first;
+      last = bufr.last;
+      first = bufr.first;
+      console.log('_updateThumb started =================');
+      console.log('    firstRank', firstRank);
+      console.log('    nfiles', files.length);
+      while (true) {
+        file = files[thumb.rank - firstRank];
+        if (file) {
+          thumb.el.src = "files/photo/thumbs/" + file.id + ".jpg";
+        }
+        thumb = thumb.prev;
+        if (thumb === first) {
+          break;
+        }
+      }
+      return console.log('_updateThumb finished =================');
     };
     _getBufferNextFirst = function() {
       var bufr, inMonthRow, initMonthRk, localRk, month, monthRk, nextFirstRk, _i;
@@ -5044,16 +5110,24 @@ module.exports = LongList = (function() {
           break;
         }
       }
-      rk = _this.nPhotos - thumbsTarget;
-      inMonthRk = rk - month.firstRk;
-      inMonthRow = Math.floor(inMonthRk / nThumbsPerRow);
-      safeZone_startPt.monthRk = monthRk;
-      safeZone_startPt.inMonthRow = inMonthRow;
-      safeZone_startPt.rank = rk;
-      return safeZone_startPt.y = month.y + cellPadding + monthHeaderHeight + inMonthRow * rowHeight;
+      if (thumbsSeen < thumbsTarget) {
+        safeZone_startPt.monthRk = 0;
+        safeZone_startPt.inMonthRow = 0;
+        safeZone_startPt.rank = 0;
+        return safeZone_startPt.y = month.y + cellPadding + monthHeaderHeight;
+      } else {
+        rk = _this.nPhotos - thumbsTarget;
+        inMonthRk = rk - month.firstRk;
+        inMonthRow = Math.floor(inMonthRk / nThumbsPerRow);
+        safeZone_startPt.monthRk = monthRk;
+        safeZone_startPt.inMonthRow = inMonthRow;
+        safeZone_startPt.rank = rk;
+        return safeZone_startPt.y = month.y + cellPadding + monthHeaderHeight + inMonthRow * rowHeight;
+      }
     };
     _createThumbsBottom = function(nToCreate, startRk, startCol, startY, monthRk) {
-      var col, localRk, month, rk, rowY, style, thumb, thumb$, _i, _ref;
+      var bufr, col, localRk, month, rk, rowY, style, thumb, thumb$, _i, _ref;
+      bufr = buffer;
       rowY = startY;
       col = startCol;
       month = _this.months[monthRk];
@@ -5062,18 +5136,18 @@ module.exports = LongList = (function() {
         if (localRk === 0) {
           _insertMonthLabel(month);
         }
-        thumb$ = document.createElement('div');
+        thumb$ = document.createElement('img');
         thumb$.dataset.rank = rk;
         thumb$.setAttribute('class', 'long-list-thumb');
         thumb = {
-          next: buffer.last,
-          prev: buffer.first,
+          next: bufr.last,
+          prev: bufr.first,
           el: thumb$,
           rank: rk
         };
-        buffer.first.next = thumb;
-        buffer.last.prev = thumb;
-        buffer.last = thumb;
+        bufr.first.next = thumb;
+        bufr.last.prev = thumb;
+        bufr.last = thumb;
         thumb$.textContent = rk + ' ' + month.month.slice(0, 4) + '-' + month.month.slice(4);
         style = thumb$.style;
         style.top = rowY + 'px';
@@ -5082,7 +5156,6 @@ module.exports = LongList = (function() {
           thumb$.classList.add('selectedThumb');
         }
         _this.thumbs$.appendChild(thumb$);
-        _this.nThumbs += 1;
         localRk += 1;
         if (localRk === month.nPhotos) {
           monthRk += 1;
@@ -5098,15 +5171,17 @@ module.exports = LongList = (function() {
           }
         }
       }
-      buffer.lastRk = rk - 1;
-      buffer.nextLastRk = rk;
-      buffer.nextLastCol = col;
-      buffer.nextLastY = rowY;
-      buffer.nextLastMonthRk = monthRk;
+      bufr.lastRk = rk - 1;
+      bufr.nThumbs += nToCreate;
+      bufr.nextLastRk = rk;
+      bufr.nextLastCol = col;
+      bufr.nextLastY = rowY;
+      bufr.nextLastMonthRk = monthRk;
       return [rowY, col, monthRk];
     };
     _moveBufferToBottom = function(nToMove, startRk, startCol, startY, monthRk) {
-      var col, localRk, month, rk, rowY, style, thumb$, _i, _ref;
+      var col, localRk, month, monthRk_initial, rk, rowY, style, thumb$, _i, _ref;
+      monthRk_initial = monthRk;
       rowY = startY;
       col = startCol;
       month = _this.months[monthRk];
@@ -5117,7 +5192,7 @@ module.exports = LongList = (function() {
         }
         thumb$ = buffer.first.el;
         thumb$.dataset.rank = rk;
-        thumb$.textContent = rk + ' ' + month.month.slice(0, 4) + '-' + month.month.slice(4);
+        thumb$.src = '';
         style = thumb$.style;
         style.top = rowY + 'px';
         style.left = (marginLeft + col * colWidth) + 'px';
@@ -5161,7 +5236,6 @@ module.exports = LongList = (function() {
       for (rk = _i = startRk, _ref = startRk - nToMove + 1; _i >= _ref; rk = _i += -1) {
         thumb$ = buffer.last.el;
         thumb$.dataset.rank = rk;
-        thumb$.textContent = rk + ' ' + month.month.slice(0, 4) + '-' + month.month.slice(4);
         style = thumb$.style;
         style.top = rowY + 'px';
         style.left = (marginLeft + col * colWidth) + 'px';
@@ -5207,7 +5281,7 @@ module.exports = LongList = (function() {
         _this.thumbs$.appendChild(label$);
         month.label$ = label$;
       }
-      label$.textContent = month.month;
+      label$.textContent = month.month.slice(0, 4) + '-' + month.month.slice(-2);
       label$.style.top = (month.y + monthTopPadding - 21) + 'px';
       return label$.style.left = '7px';
     };

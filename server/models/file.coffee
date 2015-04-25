@@ -8,6 +8,9 @@ module.exports = File = americano.getModel 'File',
     binary            : Object
     class             : String
 
+File.imageByMonth = (options, callback) ->
+    File.rawRequest 'imageByMonth', options, callback
+
 File.imageByDate = (options, callback) ->
     File.request 'imageByDate', options, callback
 

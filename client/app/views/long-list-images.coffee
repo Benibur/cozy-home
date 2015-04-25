@@ -56,6 +56,7 @@ module.exports = class LongList
 #      firstRk : {integer} # rank of the first image of the buffer
 #      last    : {thumb}   # bottom most thumb
 #      lastRk  : {integer} # rank of the last image of the buffer
+#      nThumbs : {integer} # number of thumbs in the buffer
 #      # the following data are the coordonates of the thumb that would be just
 #      # after the last of the buffer.
 #      nextLastRk      : {integer}
@@ -111,7 +112,7 @@ module.exports = class LongList
         ####
         # adapt buffer to the initial geometry when we receive the array of
         # photos
-        Photo.getPhotoArray (error, res) =>
+        Photo.getMonthdistribution (error, res) =>
             console.log 'longlist get an answer!', res
             @months  = res
             if @isInited
@@ -175,10 +176,9 @@ module.exports = class LongList
 ## PRIVATE SECTION ##
 
     _initBuffer : ()->
-        thumb$ = document.createElement('div')
+        thumb$ = document.createElement('img')
         @thumbs$.appendChild(thumb$)
         thumb$.setAttribute('class', 'long-list-thumb')
-        @nThumbs = 1
         thumb =
             prev : null
             next : null
@@ -192,6 +192,7 @@ module.exports = class LongList
                 firstRk : - 1
                 last    : thumb
                 lastRk  : - 1
+                nThumbs : 1
                 nextLastRk      : null
                 nextLastCol     : null
                 nextLastY       : null
@@ -207,7 +208,7 @@ module.exports = class LongList
         buffer                = @buffer
         cellPadding           = 4
         monthHeaderHeight     = 30
-        monthTopPadding = monthHeaderHeight + cellPadding
+        monthTopPadding       = monthHeaderHeight + cellPadding
 
         marginLeft            = null
         thumbWidth            = null
@@ -277,6 +278,7 @@ module.exports = class LongList
         _adaptBuffer = () =>
             @noScrollScheduled = true
             bufr = buffer
+            window.buffer = buffer ############################ A SUPPRIMER
             _computeSafeZone()
             safeZone =
                 firstRk      : safeZone_startPt.rank
@@ -286,11 +288,12 @@ module.exports = class LongList
                 endCol       : safeZone_endPt.col
                 endMonthRk   : safeZone_endPt.monthRk
                 endY         : safeZone_endPt.y
-            console.log safeZone
-            console.log bufr
+            console.log '======_adaptBuffer==beginning======='
+            console.log 'safeZone', safeZone
+            console.log 'bufr', bufr
             if safeZone.lastRk > bufr.lastRk
-                # the safeZone is going down and the bottom of the safeZone is
-                # bellow the bottom of the buffer
+                # 1/ the safeZone is going down and the bottom of the safeZone
+                # is bellow the bottom of the buffer
                 #
                 # nToFind = number of thumbs to find (by reusing thumbs from the
                 # buffer or by creation new ones) in order to fill the bottom of
@@ -303,10 +306,10 @@ module.exports = class LongList
                 nAvailable = safeZone.firstRk - bufr.firstRk
                 if nAvailable < 0
                     nAvailable = 0
-                if nAvailable > @nThumbs
-                    nAvailable = @nThumbs
+                if nAvailable > bufr.nThumbs
+                    nAvailable = bufr.nThumbs
 
-                nToCreate = nToFind - nAvailable
+                nToCreate = Math.max(nToFind - nAvailable, 0)
                 nToMove   = nToFind - nToCreate
 
                 if safeZone.firstRk < bufr.nextLastRk
@@ -322,15 +325,17 @@ module.exports = class LongList
                     # the safeZone is completely bellow the buffer : add thumbs
                     # bellow the top of the safeZone.
                     targetRk      = safeZone.firstRk
-                    targetCol     = 0
                     targetMonthRk = safeZone.firstMonthRk
+                    targetCol     = 0
                     targetY       = safeZone.firstY
 
+                if nToFind > 0
+                    Photo.listFromFiles targetRk, nToFind, (error, res) ->
+                        _updateThumb(res.files, res.firstRank)
+
                 if nToCreate > 0
-                    Photo.listFromFiles targetRk, nToCreate, (res, error) ->
-                        console.log res
-
-
+                    console.log "nToCreate",nToCreate
+                    console.log "targetRk",targetRk
                     [targetY, targetCol, targetMonthRk] =
                         _createThumbsBottom( nToCreate     ,
                                               targetRk     ,
@@ -340,6 +345,10 @@ module.exports = class LongList
                     targetRk += nToCreate
 
                 if nToMove > 0
+                    # console.log "nToMove",nToMove
+                    # console.log "targetRk",targetRk
+                    # Photo.listFromFiles targetRk, nToMove, (error, res) ->
+                    #     _updateThumb(res.files, res.firstRank)
                     _moveBufferToBottom( nToMove        ,
                                           targetRk      ,
                                           targetCol     ,
@@ -347,8 +356,8 @@ module.exports = class LongList
                                           targetMonthRk  )
 
             else if safeZone.firstRk < bufr.firstRk
-                # the safeZone is going up and the top of the safeZone is above
-                # the buffer
+                # 2/ the safeZone is going up and the top of the safeZone is
+                # above the buffer
                 #
                 # nToFind = number of thumbs to find (by reusing thumbs from the
                 # buffer or by creation new ones) in order to fill the top of
@@ -361,10 +370,10 @@ module.exports = class LongList
                 nAvailable = bufr.lastRk - safeZone.lastRk
                 if nAvailable < 0
                     nAvailable = 0
-                if nAvailable > @nThumbs
-                    nAvailable = @nThumbs
+                if nAvailable > bufr.nThumbs
+                    nAvailable = bufr.nThumbs
 
-                nToCreate = nToFind - nAvailable
+                nToCreate = Math.max(nToFind - nAvailable, 0)
                 nToMove   = nToFind - nToCreate
 
                 if safeZone.lastRk >= bufr.firstRk
@@ -384,6 +393,10 @@ module.exports = class LongList
                     targetMonthRk = safeZone.endMonthRk
                     targetY       = safeZone.endY
 
+                if nToFind > 0
+                    Photo.listFromFiles targetRk - nToFind + 1 , nToFind, (error, res) ->
+                        _updateThumb(res.files, res.firstRank)
+
                 if nToCreate > 0
                     throw new Error('It should not be used in the current implementation')
                     [targetY, targetCol, targetMonthRk] =
@@ -400,6 +413,29 @@ module.exports = class LongList
                                       targetCol     ,
                                       targetY       ,
                                       targetMonthRk  )
+
+            console.log '======_adaptBuffer==ending='
+            console.log 'safeZone', safeZone
+            console.log 'bufr', bufr
+            console.log '======_adaptBuffer==ended======='
+
+
+        _updateThumb = (files, firstRank)->
+            bufr  = buffer
+            thumb = bufr.first
+            last  = bufr.last
+            first  = bufr.first
+            console.log '_updateThumb started ================='
+            console.log '    firstRank', firstRank
+            console.log '    nfiles', files.length
+
+            while true
+                file = files[thumb.rank-firstRank]
+                if file
+                    thumb.el.src = "files/photo/thumbs/#{file.id}.jpg"
+                thumb = thumb.prev
+                if thumb == first then break
+            console.log '_updateThumb finished ================='
 
 
         _getBufferNextFirst = ()=>
@@ -460,7 +496,7 @@ module.exports = class LongList
             safeZone_startPt.rank         = month.firstRk + inMonthRow * nThumbsPerRow
             safeZone_startPt.y            = month.y + monthTopPadding + inMonthRow * rowHeight
             safeZone_startPt.monthRk      = monthRk
-            safeZone_startPt.inMonthRow = inMonthRow
+            safeZone_startPt.inMonthRow   = inMonthRow
             safeZone_startPt.col          = 0
 
 
@@ -597,44 +633,53 @@ module.exports = class LongList
 
         # todo bja : à renommer
         _moveUp_SafeZone_startPt_toRank = ()=>
-            months= @months
-            monthRk = months.length - 1
-            thumbsSeen = 0
+            months       = @months
+            monthRk      = months.length - 1
+            thumbsSeen   = 0
             thumbsTarget = nThumbsInSafeZone
             for monthRk in [monthRk..0] by -1
                 month = months[monthRk]
                 thumbsSeen += month.nPhotos
                 if thumbsSeen >= thumbsTarget
                     break
+            if thumbsSeen < thumbsTarget
+                # happens if the number of photo is smaller than the number
+                # in safezone (nThumbsInSafeZone), it means that safe zone
+                # begins at the first photo
+                safeZone_startPt.monthRk    = 0
+                safeZone_startPt.inMonthRow = 0
+                safeZone_startPt.rank       = 0
+                safeZone_startPt.y          = month.y + cellPadding + monthHeaderHeight
+            else
+                rk         = @nPhotos - thumbsTarget
+                inMonthRk  = rk - month.firstRk
+                inMonthRow = Math.floor(inMonthRk / nThumbsPerRow)
 
-            rk           = @nPhotos - thumbsTarget
-            inMonthRk    = rk - month.firstRk
-            inMonthRow = Math.floor(inMonthRk / nThumbsPerRow)
-
-            safeZone_startPt.monthRk      = monthRk
-            safeZone_startPt.inMonthRow = inMonthRow
-            safeZone_startPt.rank         = rk
-            safeZone_startPt.y            = month.y + cellPadding + monthHeaderHeight + inMonthRow*rowHeight
+                safeZone_startPt.monthRk    = monthRk
+                safeZone_startPt.inMonthRow = inMonthRow
+                safeZone_startPt.rank       = rk
+                safeZone_startPt.y          = month.y + cellPadding + monthHeaderHeight + inMonthRow*rowHeight
 
 
         _createThumbsBottom = (nToCreate, startRk, startCol, startY, monthRk) =>
+            bufr    = buffer
             rowY    = startY
             col     = startCol
             month   = @months[monthRk]
             localRk = startRk - month.firstRk
             for rk in [startRk..startRk+nToCreate-1] by 1
                 if localRk == 0 then _insertMonthLabel(month)
-                thumb$ = document.createElement('div')
+                thumb$ = document.createElement('img')
                 thumb$.dataset.rank = rk
                 thumb$.setAttribute('class', 'long-list-thumb')
                 thumb =
-                    next : buffer.last
-                    prev : buffer.first
+                    next : bufr.last
+                    prev : bufr.first
                     el   : thumb$
                     rank : rk
-                buffer.first.next = thumb
-                buffer.last.prev  = thumb
-                buffer.last       = thumb
+                bufr.first.next = thumb
+                bufr.last.prev  = thumb
+                bufr.last       = thumb
                 thumb$.textContent = rk + ' ' + month.month.slice(0,4) + '-' + month.month.slice(4)
                 style      = thumb$.style
                 style.top  = rowY + 'px'
@@ -642,7 +687,6 @@ module.exports = class LongList
                 if @state.selected[rk]
                     thumb$.classList.add('selectedThumb')
                 @thumbs$.appendChild(thumb$)
-                @nThumbs += 1
                 localRk += 1
                 if localRk == month.nPhotos
                     # jump to a new month
@@ -657,17 +701,19 @@ module.exports = class LongList
                     if col is nThumbsPerRow
                         rowY += rowHeight
                         col   = 0
-            buffer.lastRk = rk - 1
+            bufr.lastRk   = rk - 1
+            bufr.nThumbs += nToCreate
             # store the parameters of the thumb that is just after the last one
-            buffer.nextLastRk      = rk
-            buffer.nextLastCol     = col
-            buffer.nextLastY       = rowY
-            buffer.nextLastMonthRk = monthRk
+            bufr.nextLastRk      = rk
+            bufr.nextLastCol     = col
+            bufr.nextLastY       = rowY
+            bufr.nextLastMonthRk = monthRk
 
             return [rowY, col, monthRk]
 
 
         _moveBufferToBottom= (nToMove, startRk, startCol, startY, monthRk)=>
+            monthRk_initial = monthRk
             rowY    = startY
             col     = startCol
             month   = @months[monthRk]
@@ -677,7 +723,8 @@ module.exports = class LongList
                     _insertMonthLabel(month)
                 thumb$              = buffer.first.el
                 thumb$.dataset.rank = rk
-                thumb$.textContent  = rk + ' ' + month.month.slice(0,4) + '-' + month.month.slice(4) #+ ' (moved from top to bottom)'
+                # thumb$.textContent  = rk + ' ' + month.month.slice(0,4) + '-' + month.month.slice(4) #+ ' (moved from top to bottom)'
+                thumb$.src          = ''
                 style               = thumb$.style
                 style.top           = rowY + 'px'
                 style.left          = (marginLeft + col*colWidth) + 'px'
@@ -721,7 +768,7 @@ module.exports = class LongList
             for rk in [startRk..startRk-nToMove+1] by -1
                 thumb$              = buffer.last.el
                 thumb$.dataset.rank = rk
-                thumb$.textContent  = rk + ' ' + month.month.slice(0,4) + '-' + month.month.slice(4) # + ' (moved from bottom to top)'
+                # thumb$.textContent  = rk + ' ' + month.month.slice(0,4) + '-' + month.month.slice(4) # + ' (moved from bottom to top)'
                 style               = thumb$.style
                 style.top           = rowY + 'px'
                 style.left          = (marginLeft + col*colWidth) + 'px'
@@ -764,7 +811,9 @@ module.exports = class LongList
                 label$.classList.add('long-list-month-label')
                 @thumbs$.appendChild(label$)
                 month.label$ = label$
-            label$.textContent = month.month
+            label$.textContent =   month.month.slice(0,4) \
+                                 + '-'                    \
+                                 + month.month.slice(-2)
             label$.style.top   = (month.y + monthTopPadding - 21) + 'px'
             label$.style.left  = '7px'
 
