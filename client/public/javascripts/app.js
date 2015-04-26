@@ -4723,7 +4723,7 @@ module.exports = LongList = (function() {
   };
 
   LongList.prototype._DOM_controlerInit = function() {
-    var buffer, cellPadding, colWidth, marginLeft, monthHeaderHeight, monthTopPadding, months, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, rowHeight, safeZone_endPt, safeZone_startPt, thumbDim, thumbHeight, thumbWidth, viewPortDim, _adaptBuffer, _clickHandler, _computeSafeZone, _createThumbsBottom, _getBufferNextFirst, _getBufferNextLast, _initViewPort_startPt, _insertMonthLabel, _moveBufferToBottom, _moveBufferToTop, _moveUp_SafeZone_startPt_ofNRows, _moveUp_SafeZone_startPt_ofNThumbs, _moveUp_SafeZone_startPt_toRank, _resizeHandler, _scrollHandler, _setSafeZone_endPt, _updateThumb,
+    var buffer, cellPadding, colWidth, marginLeft, monthHeaderHeight, monthTopPadding, months, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, rowHeight, safeZone_endPt, safeZone_startPt, thumbDim, thumbHeight, thumbWidth, viewPortDim, _SZ_bottomCase, _SZ_initEndPoint, _SZ_initStartPoint, _SZ_setMarginAtStart, _adaptBuffer, _clickHandler, _computeSafeZone, _createThumbsBottom, _getBufferNextFirst, _getBufferNextLast, _insertMonthLabel, _moveBufferToBottom, _moveBufferToTop, _moveUp_SafeZone_startPt_ofNThumbs, _resizeHandler, _scrollHandler, _updateThumb,
       _this = this;
     months = this.months;
     buffer = this.buffer;
@@ -4787,8 +4787,9 @@ module.exports = LongList = (function() {
       return _this.thumbs$.style.setProperty('height', nextY + 'px');
     };
     /**
-     * [_adaptBuffer description]
-     * @return {[type]} [description]
+     * Adapt the buffer when the viewport has moved
+     * Launched at init and by _scrollHandler
+     * Steps :
     */
 
     _adaptBuffer = function() {
@@ -4893,7 +4894,7 @@ module.exports = LongList = (function() {
       var bufr, file, file_i, first, firstThumbRkToUpdate, firstThumbToUpdate, last, thumb, _i, _j, _ref, _ref1, _ref2;
       bufr = buffer;
       thumb = bufr.first;
-      firstThumbToUpdate = safeZone_startPt.firstVisibleThumb;
+      firstThumbToUpdate = safeZone_startPt.firstThumbToUpdate;
       firstThumbRkToUpdate = firstThumbToUpdate.rank;
       last = bufr.last;
       first = bufr.first;
@@ -4966,16 +4967,21 @@ module.exports = LongList = (function() {
       bufr.nextLastY = month.y + monthTopPadding + inMonthRow * rowHeight;
       return bufr.nextLastCol = localRk % nThumbsPerRow;
     };
+    /**
+     * [_computeSafeZone description]
+     * @return {[type]} [description]
+    */
+
     _computeSafeZone = function() {
       var hasReachedLastPhoto;
-      _initViewPort_startPt();
-      _moveUp_SafeZone_startPt_ofNRows();
-      hasReachedLastPhoto = _setSafeZone_endPt();
+      _SZ_initStartPoint();
+      _SZ_setMarginAtStart();
+      hasReachedLastPhoto = _SZ_initEndPoint();
       if (hasReachedLastPhoto) {
-        return _moveUp_SafeZone_startPt_toRank();
+        return _SZ_bottomCase();
       }
     };
-    _initViewPort_startPt = function() {
+    _SZ_initStartPoint = function() {
       var Y, inMonthRow, month, monthRk, szStart, _i, _len, _ref;
       szStart = safeZone_startPt;
       Y = _this.viewPort$.scrollTop;
@@ -4992,13 +4998,13 @@ module.exports = LongList = (function() {
       }
       szStart.rank = month.firstRk + inMonthRow * nThumbsPerRow;
       szStart.firstVisibleRk = szStart.rank;
-      szStart.firstVisibleThumb = null;
+      szStart.firstThumbToUpdate = null;
       szStart.y = month.y + monthTopPadding + inMonthRow * rowHeight;
       szStart.monthRk = monthRk;
       szStart.inMonthRow = inMonthRow;
       return szStart.col = 0;
     };
-    _moveUp_SafeZone_startPt_ofNRows = function() {
+    _SZ_setMarginAtStart = function() {
       var inMonthRow, j, month, rowsSeen, _i, _ref;
       inMonthRow = safeZone_startPt.inMonthRow - nRowsInSafeZoneMargin;
       if (inMonthRow >= 0) {
@@ -5091,7 +5097,7 @@ module.exports = LongList = (function() {
      * thumb
     */
 
-    _setSafeZone_endPt = function() {
+    _SZ_initEndPoint = function() {
       var inMonthRk, inMonthRow, lastRk, month, monthRk, _i, _ref, _ref1;
       lastRk = safeZone_startPt.rank + nThumbsInSafeZone - 1;
       if (lastRk >= _this.nPhotos) {
@@ -5114,7 +5120,7 @@ module.exports = LongList = (function() {
       safeZone_endPt.y = month.y + monthTopPadding + inMonthRow * rowHeight;
       return false;
     };
-    _moveUp_SafeZone_startPt_toRank = function() {
+    _SZ_bottomCase = function() {
       var inMonthRk, inMonthRow, month, monthRk, rk, thumbsSeen, thumbsTarget, _i;
       months = _this.months;
       monthRk = months.length - 1;
@@ -5164,7 +5170,7 @@ module.exports = LongList = (function() {
           rank: rk
         };
         if (rk === safeZone_startPt.firstVisibleRk) {
-          safeZone_startPt.firstVisibleThumb = thumb;
+          safeZone_startPt.firstThumbToUpdate = thumb;
         }
         bufr.first.next = thumb;
         bufr.last.prev = thumb;
@@ -5194,10 +5200,9 @@ module.exports = LongList = (function() {
       }
       bufr.lastRk = rk - 1;
       bufr.nThumbs += nToCreate;
-      if (safeZone_startPt.firstVisibleThumb === null) {
-        safeZone_startPt.firstVisibleThumb = lastLast.prev;
+      if (safeZone_startPt.firstThumbToUpdate === null) {
+        safeZone_startPt.firstThumbToUpdate = lastLast.prev;
       }
-      console.log('firstVisibleThumb (_createThumbsBottom)', safeZone_startPt.firstVisibleThumb.el);
       bufr.nextLastRk = rk;
       bufr.nextLastCol = col;
       bufr.nextLastY = rowY;
@@ -5211,8 +5216,8 @@ module.exports = LongList = (function() {
       col = startCol;
       month = _this.months[monthRk];
       localRk = startRk - month.firstRk;
-      if (safeZone_startPt.firstVisibleThumb === null) {
-        safeZone_startPt.firstVisibleThumb = buffer.first;
+      if (safeZone_startPt.firstThumbToUpdate === null) {
+        safeZone_startPt.firstThumbToUpdate = buffer.first;
       }
       for (rk = _i = startRk, _ref = startRk + nToMove - 1; _i <= _ref; rk = _i += 1) {
         if (localRk === 0) {
@@ -5232,7 +5237,7 @@ module.exports = LongList = (function() {
           thumb$.classList.remove('selectedThumb');
         }
         if (rk === safeZone_startPt.firstVisibleRk) {
-          safeZone_startPt.firstVisibleThumb = thumb;
+          safeZone_startPt.firstThumbToUpdate = thumb;
         }
         buffer.last = buffer.first;
         buffer.first = buffer.first.prev;
@@ -5253,7 +5258,7 @@ module.exports = LongList = (function() {
           }
         }
       }
-      console.log('firstVisibleThumb (_moveBufferToBottom)', safeZone_startPt.firstVisibleThumb.el);
+      console.log('firstThumbToUpdate (_moveBufferToBottom)', safeZone_startPt.firstThumbToUpdate.el);
       buffer.lastRk = rk - 1;
       buffer.firstRk = buffer.first.rank;
       buffer.nextLastRk = rk;
@@ -5267,8 +5272,8 @@ module.exports = LongList = (function() {
       col = startCol;
       month = _this.months[monthRk];
       localRk = startRk - month.firstRk;
-      if (safeZone_startPt.firstVisibleThumb === null) {
-        safeZone_startPt.firstVisibleThumb = buffer.last;
+      if (safeZone_startPt.firstThumbToUpdate === null) {
+        safeZone_startPt.firstThumbToUpdate = buffer.last;
       }
       for (rk = _i = startRk, _ref = startRk - nToMove + 1; _i >= _ref; rk = _i += -1) {
         thumb = buffer.last;
@@ -5285,7 +5290,7 @@ module.exports = LongList = (function() {
           thumb$.classList.remove('selectedThumb');
         }
         if (rk === safeZone_startPt.firstVisibleRk) {
-          safeZone_startPt.firstVisibleThumb = thumb;
+          safeZone_startPt.firstThumbToUpdate = thumb;
         }
         buffer.first = buffer.last;
         buffer.last = buffer.last.next;
@@ -5311,7 +5316,7 @@ module.exports = LongList = (function() {
           }
         }
       }
-      console.log('firstVisibleThumb (_moveBufferToTop)', safeZone_startPt.firstVisibleThumb.el);
+      console.log('firstThumbToUpdate (_moveBufferToTop)', safeZone_startPt.firstThumbToUpdate.el);
       buffer.firstRk = rk + 1;
       return buffer.lastRk = buffer.last.rank;
     };
