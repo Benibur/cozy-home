@@ -4661,7 +4661,6 @@ module.exports = LongList = (function() {
     this.thumbs$.style.position = 'absolute';
     this.buffer = this._initBuffer();
     Photo.getMonthdistribution(function(error, res) {
-      console.log('longlist get an answer!', res);
       _this.months = res;
       if (_this.isInited) {
         _this.DOM_controler = _this._DOM_controlerInit();
@@ -4796,7 +4795,6 @@ module.exports = LongList = (function() {
       var bufr, nAvailable, nToCreate, nToFind, nToMove, safeZone, targetCol, targetMonthRk, targetRk, targetY, _ref, _ref1;
       _this.noScrollScheduled = true;
       bufr = buffer;
-      window.buffer = buffer;
       _computeSafeZone();
       safeZone = {
         firstRk: safeZone_startPt.rank,
@@ -4807,7 +4805,7 @@ module.exports = LongList = (function() {
         endMonthRk: safeZone_endPt.monthRk,
         endY: safeZone_endPt.y
       };
-      console.log('======_adaptBuffer==beginning=======');
+      console.log('\n======_adaptBuffer==beginning=======');
       console.log('safeZone', safeZone);
       console.log('bufr', bufr);
       if (safeZone.lastRk > bufr.lastRk) {
@@ -4821,7 +4819,7 @@ module.exports = LongList = (function() {
         }
         nToCreate = Math.max(nToFind - nAvailable, 0);
         nToMove = nToFind - nToCreate;
-        if (safeZone.firstRk < bufr.nextLastRk) {
+        if (safeZone.firstRk <= bufr.lastRk) {
           _getBufferNextLast();
           targetRk = bufr.nextLastRk;
           targetMonthRk = bufr.nextLastMonthRk;
@@ -4833,14 +4831,13 @@ module.exports = LongList = (function() {
           targetCol = 0;
           targetY = safeZone.firstY;
         }
+        console.log('direction: DOWN', 'nToFind:' + nToFind, 'nAvailable:' + nAvailable, 'nToCreate:' + nToCreate, 'nToMove:' + nToMove, 'targetRk:' + targetRk);
         if (nToFind > 0) {
           Photo.listFromFiles(targetRk, nToFind, function(error, res) {
             return _updateThumb(res.files, res.firstRank);
           });
         }
         if (nToCreate > 0) {
-          console.log("nToCreate", nToCreate);
-          console.log("targetRk", targetRk);
           _ref = _createThumbsBottom(nToCreate, targetRk, targetCol, targetY, targetMonthRk), targetY = _ref[0], targetCol = _ref[1], targetMonthRk = _ref[2];
           targetRk += nToCreate;
         }
@@ -4870,6 +4867,7 @@ module.exports = LongList = (function() {
           targetMonthRk = safeZone.endMonthRk;
           targetY = safeZone.endY;
         }
+        console.log('direction: UP', 'nToFind:' + nToFind, 'nAvailable:' + nAvailable, 'nToCreate:' + nToCreate, 'nToMove:' + nToMove, 'targetRk:' + targetRk);
         if (nToFind > 0) {
           Photo.listFromFiles(targetRk - nToFind + 1, nToFind, function(error, res) {
             return _updateThumb(res.files, res.firstRank);
@@ -4884,31 +4882,47 @@ module.exports = LongList = (function() {
           _moveBufferToTop(nToMove, targetRk, targetCol, targetY, targetMonthRk);
         }
       }
+      if (nToFind == null) {
+        console.log('buffer inside safe zone, no modification of the buffer');
+      }
       console.log('======_adaptBuffer==ending=');
-      console.log('safeZone', safeZone);
       console.log('bufr', bufr);
       return console.log('======_adaptBuffer==ended=======');
     };
     _updateThumb = function(files, firstRank) {
-      var bufr, file, first, last, thumb;
+      var bufr, file, file_i, first, firstThumbRkToUpdate, firstThumbToUpdate, last, thumb, _i, _j, _ref, _ref1, _ref2;
       bufr = buffer;
       thumb = bufr.first;
+      firstThumbToUpdate = safeZone_startPt.firstVisibleThumb;
+      firstThumbRkToUpdate = firstThumbToUpdate.rank;
       last = bufr.last;
       first = bufr.first;
-      console.log('_updateThumb started =================');
-      console.log('    firstRank', firstRank);
-      console.log('    nfiles', files.length);
-      while (true) {
-        file = files[thumb.rank - firstRank];
-        if (file) {
-          thumb.el.src = "files/photo/thumbs/" + file.id + ".jpg";
-        }
-        thumb = thumb.prev;
-        if (thumb === first) {
-          break;
-        }
+      console.log('======_updateThumb started =================');
+      if (firstThumbRkToUpdate <= files.length + firstRank - 1) {
+        console.log(" update forward: " + firstThumbRkToUpdate + "->" + (files.length + firstRank - 1));
+      } else {
+        console.log(" update forward: none");
       }
-      return console.log('_updateThumb finished =================');
+      thumb = firstThumbToUpdate;
+      for (file_i = _i = _ref = firstThumbRkToUpdate - firstRank, _ref1 = files.length - 1; _i <= _ref1; file_i = _i += 1) {
+        file = files[file_i];
+        thumb.el.src = "files/photo/thumbs/" + file.id + ".jpg";
+        thumb.id = file.id;
+        thumb = thumb.prev;
+      }
+      if (firstThumbRkToUpdate - firstRank - 1 >= 0) {
+        console.log(" update backward " + (firstThumbRkToUpdate - 1) + "->" + (firstThumbRkToUpdate - 1 - (firstThumbRkToUpdate - firstRank) + 1));
+      } else {
+        console.log(" update backward: none");
+      }
+      thumb = firstThumbToUpdate.next;
+      for (file_i = _j = _ref2 = firstThumbRkToUpdate - firstRank - 1; _j >= 0; file_i = _j += -1) {
+        file = files[file_i];
+        thumb.el.src = "files/photo/thumbs/" + file.id + ".jpg";
+        thumb.id = file.id;
+        thumb = thumb.next;
+      }
+      return console.log('======_updateThumb finished =================');
     };
     _getBufferNextFirst = function() {
       var bufr, inMonthRow, initMonthRk, localRk, month, monthRk, nextFirstRk, _i;
@@ -4962,7 +4976,8 @@ module.exports = LongList = (function() {
       }
     };
     _initViewPort_startPt = function() {
-      var Y, inMonthRow, month, monthRk, _i, _len, _ref;
+      var Y, inMonthRow, month, monthRk, szStart, _i, _len, _ref;
+      szStart = safeZone_startPt;
       Y = _this.viewPort$.scrollTop;
       _ref = _this.months;
       for (monthRk = _i = 0, _len = _ref.length; _i < _len; monthRk = ++_i) {
@@ -4975,11 +4990,13 @@ module.exports = LongList = (function() {
       if (inMonthRow < 0) {
         inMonthRow = 0;
       }
-      safeZone_startPt.rank = month.firstRk + inMonthRow * nThumbsPerRow;
-      safeZone_startPt.y = month.y + monthTopPadding + inMonthRow * rowHeight;
-      safeZone_startPt.monthRk = monthRk;
-      safeZone_startPt.inMonthRow = inMonthRow;
-      return safeZone_startPt.col = 0;
+      szStart.rank = month.firstRk + inMonthRow * nThumbsPerRow;
+      szStart.firstVisibleRk = szStart.rank;
+      szStart.firstVisibleThumb = null;
+      szStart.y = month.y + monthTopPadding + inMonthRow * rowHeight;
+      szStart.monthRk = monthRk;
+      szStart.inMonthRow = inMonthRow;
+      return szStart.col = 0;
     };
     _moveUp_SafeZone_startPt_ofNRows = function() {
       var inMonthRow, j, month, rowsSeen, _i, _ref;
@@ -5084,7 +5101,7 @@ module.exports = LongList = (function() {
       }
       for (monthRk = _i = _ref = safeZone_startPt.monthRk, _ref1 = months.length - 1; _ref <= _ref1 ? _i <= _ref1 : _i >= _ref1; monthRk = _ref <= _ref1 ? ++_i : --_i) {
         month = months[monthRk];
-        if (lastRk < month.lastRk) {
+        if (lastRk <= month.lastRk) {
           break;
         }
       }
@@ -5126,12 +5143,13 @@ module.exports = LongList = (function() {
       }
     };
     _createThumbsBottom = function(nToCreate, startRk, startCol, startY, monthRk) {
-      var bufr, col, localRk, month, rk, rowY, style, thumb, thumb$, _i, _ref;
+      var bufr, col, lastLast, localRk, month, rk, rowY, style, thumb, thumb$, _i, _ref;
       bufr = buffer;
       rowY = startY;
       col = startCol;
       month = _this.months[monthRk];
       localRk = startRk - month.firstRk;
+      lastLast = bufr.last;
       for (rk = _i = startRk, _ref = startRk + nToCreate - 1; _i <= _ref; rk = _i += 1) {
         if (localRk === 0) {
           _insertMonthLabel(month);
@@ -5145,6 +5163,9 @@ module.exports = LongList = (function() {
           el: thumb$,
           rank: rk
         };
+        if (rk === safeZone_startPt.firstVisibleRk) {
+          safeZone_startPt.firstVisibleThumb = thumb;
+        }
         bufr.first.next = thumb;
         bufr.last.prev = thumb;
         bufr.last = thumb;
@@ -5173,6 +5194,10 @@ module.exports = LongList = (function() {
       }
       bufr.lastRk = rk - 1;
       bufr.nThumbs += nToCreate;
+      if (safeZone_startPt.firstVisibleThumb === null) {
+        safeZone_startPt.firstVisibleThumb = lastLast.prev;
+      }
+      console.log('firstVisibleThumb (_createThumbsBottom)', safeZone_startPt.firstVisibleThumb.el);
       bufr.nextLastRk = rk;
       bufr.nextLastCol = col;
       bufr.nextLastY = rowY;
@@ -5180,18 +5205,23 @@ module.exports = LongList = (function() {
       return [rowY, col, monthRk];
     };
     _moveBufferToBottom = function(nToMove, startRk, startCol, startY, monthRk) {
-      var col, localRk, month, monthRk_initial, rk, rowY, style, thumb$, _i, _ref;
+      var col, localRk, month, monthRk_initial, rk, rowY, style, thumb, thumb$, _i, _ref;
       monthRk_initial = monthRk;
       rowY = startY;
       col = startCol;
       month = _this.months[monthRk];
       localRk = startRk - month.firstRk;
+      if (safeZone_startPt.firstVisibleThumb === null) {
+        safeZone_startPt.firstVisibleThumb = buffer.first;
+      }
       for (rk = _i = startRk, _ref = startRk + nToMove - 1; _i <= _ref; rk = _i += 1) {
         if (localRk === 0) {
           _insertMonthLabel(month);
         }
-        thumb$ = buffer.first.el;
+        thumb = buffer.first;
+        thumb$ = thumb.el;
         thumb$.dataset.rank = rk;
+        thumb.rank = rk;
         thumb$.src = '';
         style = thumb$.style;
         style.top = rowY + 'px';
@@ -5200,6 +5230,9 @@ module.exports = LongList = (function() {
           thumb$.classList.add('selectedThumb');
         } else {
           thumb$.classList.remove('selectedThumb');
+        }
+        if (rk === safeZone_startPt.firstVisibleRk) {
+          safeZone_startPt.firstVisibleThumb = thumb;
         }
         buffer.last = buffer.first;
         buffer.first = buffer.first.prev;
@@ -5220,6 +5253,7 @@ module.exports = LongList = (function() {
           }
         }
       }
+      console.log('firstVisibleThumb (_moveBufferToBottom)', safeZone_startPt.firstVisibleThumb.el);
       buffer.lastRk = rk - 1;
       buffer.firstRk = buffer.first.rank;
       buffer.nextLastRk = rk;
@@ -5228,14 +5262,20 @@ module.exports = LongList = (function() {
       return buffer.nextLastMonthRk = monthRk;
     };
     _moveBufferToTop = function(nToMove, startRk, startCol, startY, monthRk) {
-      var col, localRk, month, rk, rowY, style, thumb$, _i, _ref;
+      var col, localRk, month, rk, rowY, style, thumb, thumb$, _i, _ref;
       rowY = startY;
       col = startCol;
       month = _this.months[monthRk];
       localRk = startRk - month.firstRk;
+      if (safeZone_startPt.firstVisibleThumb === null) {
+        safeZone_startPt.firstVisibleThumb = buffer.last;
+      }
       for (rk = _i = startRk, _ref = startRk - nToMove + 1; _i >= _ref; rk = _i += -1) {
-        thumb$ = buffer.last.el;
+        thumb = buffer.last;
+        thumb$ = thumb.el;
         thumb$.dataset.rank = rk;
+        thumb.rank = rk;
+        thumb$.src = '';
         style = thumb$.style;
         style.top = rowY + 'px';
         style.left = (marginLeft + col * colWidth) + 'px';
@@ -5243,6 +5283,9 @@ module.exports = LongList = (function() {
           thumb$.classList.add('selectedThumb');
         } else {
           thumb$.classList.remove('selectedThumb');
+        }
+        if (rk === safeZone_startPt.firstVisibleRk) {
+          safeZone_startPt.firstVisibleThumb = thumb;
         }
         buffer.first = buffer.last;
         buffer.last = buffer.last.next;
@@ -5268,6 +5311,7 @@ module.exports = LongList = (function() {
           }
         }
       }
+      console.log('firstVisibleThumb (_moveBufferToTop)', safeZone_startPt.firstVisibleThumb.el);
       buffer.firstRk = rk + 1;
       return buffer.lastRk = buffer.last.rank;
     };

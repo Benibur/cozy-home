@@ -73,16 +73,18 @@ module.exports = class LongList
 #      next :
 #      el   : {thumb$}  # element in the dom of the thumb
 #      rank : {integer} # rank of the corresponding image
+#      id   : {integer} # id of the corresponding image
 #   Element of the buffer, keeps a reference (el) to the thumb element inserted
 #   in the DOM.
 #
 # 8/ safeZone
 #   safeZone_startPt
-#         rank         :
-#         monthRk      :
-#         inMonthRow :
-#         col          :
-#         y            :
+#         firstVisibleRk : {integer}
+#         rank           : {integer}
+#         monthRk        : {integer}
+#         inMonthRow     : {integer}
+#         col            : {integer}
+#         y              : {integer}
 #
 #
 ################################################################################
@@ -113,7 +115,7 @@ module.exports = class LongList
         # adapt buffer to the initial geometry when we receive the array of
         # photos
         Photo.getMonthdistribution (error, res) =>
-            console.log 'longlist get an answer!', res
+            # console.log 'longlist get an answer!', res
             @months  = res
             if @isInited
                 ####
@@ -278,7 +280,7 @@ module.exports = class LongList
         _adaptBuffer = () =>
             @noScrollScheduled = true
             bufr = buffer
-            window.buffer = buffer ############################ A SUPPRIMER
+            # window.buffer = buffer ############################ A SUPPRIMER
             _computeSafeZone()
             safeZone =
                 firstRk      : safeZone_startPt.rank
@@ -288,7 +290,7 @@ module.exports = class LongList
                 endCol       : safeZone_endPt.col
                 endMonthRk   : safeZone_endPt.monthRk
                 endY         : safeZone_endPt.y
-            console.log '======_adaptBuffer==beginning======='
+            console.log '\n======_adaptBuffer==beginning======='
             console.log 'safeZone', safeZone
             console.log 'bufr', bufr
             if safeZone.lastRk > bufr.lastRk
@@ -312,7 +314,7 @@ module.exports = class LongList
                 nToCreate = Math.max(nToFind - nAvailable, 0)
                 nToMove   = nToFind - nToCreate
 
-                if safeZone.firstRk < bufr.nextLastRk
+                if safeZone.firstRk <= bufr.lastRk
                     # part of the buffer is in the safe zone : add thumbs after
                     # the last thumb of the buffer
                     _getBufferNextLast()
@@ -329,13 +331,18 @@ module.exports = class LongList
                     targetCol     = 0
                     targetY       = safeZone.firstY
 
+                console.log 'direction: DOWN',         \
+                            'nToFind:'   + nToFind,    \
+                            'nAvailable:'+ nAvailable, \
+                            'nToCreate:' + nToCreate,  \
+                            'nToMove:'   + nToMove,    \
+                            'targetRk:'  + targetRk
+
                 if nToFind > 0
                     Photo.listFromFiles targetRk, nToFind, (error, res) ->
                         _updateThumb(res.files, res.firstRank)
 
                 if nToCreate > 0
-                    console.log "nToCreate",nToCreate
-                    console.log "targetRk",targetRk
                     [targetY, targetCol, targetMonthRk] =
                         _createThumbsBottom( nToCreate     ,
                                               targetRk     ,
@@ -393,6 +400,13 @@ module.exports = class LongList
                     targetMonthRk = safeZone.endMonthRk
                     targetY       = safeZone.endY
 
+                console.log 'direction: UP',         \
+                            'nToFind:'   + nToFind,    \
+                            'nAvailable:'+ nAvailable, \
+                            'nToCreate:' + nToCreate,  \
+                            'nToMove:'   + nToMove,    \
+                            'targetRk:'  + targetRk
+
                 if nToFind > 0
                     Photo.listFromFiles targetRk - nToFind + 1 , nToFind, (error, res) ->
                         _updateThumb(res.files, res.firstRank)
@@ -413,9 +427,9 @@ module.exports = class LongList
                                       targetCol     ,
                                       targetY       ,
                                       targetMonthRk  )
-
+            if !nToFind? then console.log 'buffer inside safe zone, no modification of the buffer'
             console.log '======_adaptBuffer==ending='
-            console.log 'safeZone', safeZone
+            # console.log 'safeZone', safeZone
             console.log 'bufr', bufr
             console.log '======_adaptBuffer==ended======='
 
@@ -423,19 +437,45 @@ module.exports = class LongList
         _updateThumb = (files, firstRank)->
             bufr  = buffer
             thumb = bufr.first
+            firstThumbToUpdate = safeZone_startPt.firstVisibleThumb
+            firstThumbRkToUpdate = firstThumbToUpdate.rank
             last  = bufr.last
             first  = bufr.first
-            console.log '_updateThumb started ================='
-            console.log '    firstRank', firstRank
-            console.log '    nfiles', files.length
+            console.log '======_updateThumb started ================='
+            # console.log '    firstRank', firstRank
+            # console.log '    nfiles', files.length
+            # console.log '    firstVisibleThumb', safeZone_startPt.firstVisibleThumb.el
 
-            while true
-                file = files[thumb.rank-firstRank]
-                if file
-                    thumb.el.src = "files/photo/thumbs/#{file.id}.jpg"
-                thumb = thumb.prev
-                if thumb == first then break
-            console.log '_updateThumb finished ================='
+            if firstThumbRkToUpdate <= files.length+firstRank-1
+                console.log " update forward: #{firstThumbRkToUpdate}->#{files.length+firstRank-1}"
+            else
+                console.log " update forward: none"
+            thumb = firstThumbToUpdate
+            for file_i in [firstThumbRkToUpdate-firstRank..files.length-1] by 1
+                file         = files[file_i]
+                thumb.el.src = "files/photo/thumbs/#{file.id}.jpg"
+                thumb.id     = file.id
+                thumb        = thumb.prev
+
+            if firstThumbRkToUpdate-firstRank-1 >= 0
+                console.log " update backward #{firstThumbRkToUpdate-1}->#{firstThumbRkToUpdate-1-(firstThumbRkToUpdate-firstRank)+1}"
+            else
+                console.log " update backward: none"
+            thumb = firstThumbToUpdate.next
+            for file_i in [firstThumbRkToUpdate-firstRank-1..0] by -1
+                file         = files[file_i]
+                thumb.el.src = "files/photo/thumbs/#{file.id}.jpg"
+                thumb.id     = file.id
+                thumb        = thumb.next
+
+            # while true
+            #     file = files[thumb.rank-firstRank]
+            #     if file
+            #         thumb.el.src = "files/photo/thumbs/#{file.id}.jpg"
+            #         thumb.id     = file.id
+            #     thumb = thumb.prev
+            #     if thumb == first then break
+            console.log '======_updateThumb finished ================='
 
 
         _getBufferNextFirst = ()=>
@@ -485,6 +525,7 @@ module.exports = class LongList
 
 
         _initViewPort_startPt = ()=>
+            szStart = safeZone_startPt
             Y = @viewPort$.scrollTop
             for month, monthRk in @months
                 if month.yBottom > Y
@@ -493,11 +534,13 @@ module.exports = class LongList
             if inMonthRow < 0
                 # happens if the viewport is in the header of a month
                 inMonthRow = 0
-            safeZone_startPt.rank         = month.firstRk + inMonthRow * nThumbsPerRow
-            safeZone_startPt.y            = month.y + monthTopPadding + inMonthRow * rowHeight
-            safeZone_startPt.monthRk      = monthRk
-            safeZone_startPt.inMonthRow   = inMonthRow
-            safeZone_startPt.col          = 0
+            szStart.rank           = month.firstRk + inMonthRow * nThumbsPerRow
+            szStart.firstVisibleRk = szStart.rank
+            szStart.firstVisibleThumb = null
+            szStart.y              = month.y + monthTopPadding + inMonthRow * rowHeight
+            szStart.monthRk        = monthRk
+            szStart.inMonthRow     = inMonthRow
+            szStart.col            = 0
 
 
         _moveUp_SafeZone_startPt_ofNRows = () =>
@@ -619,7 +662,7 @@ module.exports = class LongList
             #
             for monthRk in [safeZone_startPt.monthRk..months.length-1]
                 month = months[monthRk]
-                if lastRk < month.lastRk
+                if lastRk <= month.lastRk
                     break
             safeZone_endPt.rank       = lastRk
             safeZone_endPt.monthRk    = monthRk
@@ -662,11 +705,12 @@ module.exports = class LongList
 
 
         _createThumbsBottom = (nToCreate, startRk, startCol, startY, monthRk) =>
-            bufr    = buffer
-            rowY    = startY
-            col     = startCol
-            month   = @months[monthRk]
-            localRk = startRk - month.firstRk
+            bufr     = buffer
+            rowY     = startY
+            col      = startCol
+            month    = @months[monthRk]
+            localRk  = startRk - month.firstRk
+            lastLast = bufr.last
             for rk in [startRk..startRk+nToCreate-1] by 1
                 if localRk == 0 then _insertMonthLabel(month)
                 thumb$ = document.createElement('img')
@@ -677,6 +721,8 @@ module.exports = class LongList
                     prev : bufr.first
                     el   : thumb$
                     rank : rk
+                if rk == safeZone_startPt.firstVisibleRk
+                    safeZone_startPt.firstVisibleThumb = thumb
                 bufr.first.next = thumb
                 bufr.last.prev  = thumb
                 bufr.last       = thumb
@@ -703,6 +749,10 @@ module.exports = class LongList
                         col   = 0
             bufr.lastRk   = rk - 1
             bufr.nThumbs += nToCreate
+            #
+            if safeZone_startPt.firstVisibleThumb == null
+                safeZone_startPt.firstVisibleThumb = lastLast.prev
+            console.log 'firstVisibleThumb (_createThumbsBottom)', safeZone_startPt.firstVisibleThumb.el
             # store the parameters of the thumb that is just after the last one
             bufr.nextLastRk      = rk
             bufr.nextLastCol     = col
@@ -718,12 +768,17 @@ module.exports = class LongList
             col     = startCol
             month   = @months[monthRk]
             localRk = startRk - month.firstRk
+
+            if safeZone_startPt.firstVisibleThumb == null
+                safeZone_startPt.firstVisibleThumb = buffer.first
+
             for rk in [startRk..startRk+nToMove-1] by 1
                 if localRk == 0
                     _insertMonthLabel(month)
-                thumb$              = buffer.first.el
+                thumb  = buffer.first
+                thumb$ = thumb.el
                 thumb$.dataset.rank = rk
-                # thumb$.textContent  = rk + ' ' + month.month.slice(0,4) + '-' + month.month.slice(4) #+ ' (moved from top to bottom)'
+                thumb.rank          = rk
                 thumb$.src          = ''
                 style               = thumb$.style
                 style.top           = rowY + 'px'
@@ -732,6 +787,8 @@ module.exports = class LongList
                     thumb$.classList.add('selectedThumb')
                 else
                     thumb$.classList.remove('selectedThumb')
+                if rk == safeZone_startPt.firstVisibleRk
+                    safeZone_startPt.firstVisibleThumb = thumb
                 buffer.last      = buffer.first
                 buffer.first     = buffer.first.prev
                 buffer.firstRk   = buffer.first.rank
@@ -750,6 +807,8 @@ module.exports = class LongList
                     if col is nThumbsPerRow
                         rowY += rowHeight
                         col   = 0
+
+            console.log 'firstVisibleThumb (_moveBufferToBottom)', safeZone_startPt.firstVisibleThumb.el
             buffer.lastRk  = rk - 1
             buffer.firstRk = buffer.first.rank
             # store the parameters of the thumb that is just after the last one
@@ -765,10 +824,16 @@ module.exports = class LongList
             col     = startCol
             month   = @months[monthRk]
             localRk = startRk - month.firstRk
+
+            if safeZone_startPt.firstVisibleThumb == null
+                safeZone_startPt.firstVisibleThumb = buffer.last
+
             for rk in [startRk..startRk-nToMove+1] by -1
-                thumb$              = buffer.last.el
+                thumb               = buffer.last
+                thumb$              = thumb.el
                 thumb$.dataset.rank = rk
-                # thumb$.textContent  = rk + ' ' + month.month.slice(0,4) + '-' + month.month.slice(4) # + ' (moved from bottom to top)'
+                thumb.rank          = rk
+                thumb$.src          = ''
                 style               = thumb$.style
                 style.top           = rowY + 'px'
                 style.left          = (marginLeft + col*colWidth) + 'px'
@@ -776,6 +841,8 @@ module.exports = class LongList
                     thumb$.classList.add('selectedThumb')
                 else
                     thumb$.classList.remove('selectedThumb')
+                if rk == safeZone_startPt.firstVisibleRk
+                    safeZone_startPt.firstVisibleThumb = thumb
                 buffer.first      = buffer.last
                 buffer.last       = buffer.last.next
                 buffer.lastRk     = buffer.last.rank
@@ -799,6 +866,7 @@ module.exports = class LongList
                         rowY -= rowHeight
                         col   = nThumbsPerRow - 1
 
+            console.log 'firstVisibleThumb (_moveBufferToTop)', safeZone_startPt.firstVisibleThumb.el
             buffer.firstRk = rk + 1
             buffer.lastRk  = buffer.last.rank
 
