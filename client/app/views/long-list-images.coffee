@@ -1,7 +1,8 @@
 Photo    = require '../models/photo'
 
-ACTIVATED = true
-THROTTLE  = 350
+ACTIVATED     = true
+THROTTLE      = 350
+COEF_SECURITY = 0.5
 
 module.exports = class LongList
 
@@ -221,6 +222,7 @@ module.exports = class LongList
         nRowsInSafeZoneMargin = null
         nThumbsInSafeZone     = null
         viewPortDim           = null
+        safeZone = {}
         safeZone_startPt      = {}
         safeZone_endPt        = {}
 
@@ -248,7 +250,7 @@ module.exports = class LongList
             # always at least 10 rows of thumbs in the buffer
             nRowsInViewPort         = Math.ceil(
                 @viewPort$.clientHeight /rowHeight)
-            nRowsInSafeZoneMargin   = Math.round(1.5 * nRowsInViewPort)
+            nRowsInSafeZoneMargin   = Math.round(COEF_SECURITY * nRowsInViewPort)
             nThumbsInSafeZoneMargin = nRowsInSafeZoneMargin * nThumbsPerRow # todo bja : quelle variable est à utiliser ? nbr de lignes ou de thumbs?
             # height reserved between two months
             # monthHeaderHeight = 40
@@ -282,17 +284,28 @@ module.exports = class LongList
             @noScrollScheduled = true
             bufr = buffer
             # window.buffer = buffer ############################ A SUPPRIMER
+            safeZone = {}
+            safeZone_startPt = safeZone
             _computeSafeZone()
-            safeZone =
-                firstRk      : safeZone_startPt.rank
-                firstMonthRk : safeZone_startPt.monthRk
-                firstY       : safeZone_startPt.y
-                lastRk       : safeZone_endPt.rank
-                endCol       : safeZone_endPt.col
-                endMonthRk   : safeZone_endPt.monthRk
-                endY         : safeZone_endPt.y
+
+            safeZone.lastRk       = safeZone_endPt.rank
+            safeZone.endCol       = safeZone_endPt.col
+            safeZone.endMonthRk   = safeZone_endPt.monthRk
+            safeZone.endY         = safeZone_endPt.y
+            # safeZone =
+            #     firstRk         : safeZone_startPt.rank
+            #     firstMonthRk    : safeZone_startPt.monthRk
+            #     firstInMonthRow : safeZone_startPt.inMonthRow
+            #     firstCol
+            #     firstVisibleRk
+            #     firstThumbToUpdate
+            #     firstY          : safeZone_startPt.y
+            #     lastRk          : safeZone_endPt.rank
+            #     endCol          : safeZone_endPt.col
+            #     endMonthRk      : safeZone_endPt.monthRk
+            #     endY            : safeZone_endPt.y
             console.log '\n======_adaptBuffer==beginning======='
-            console.log 'safeZone', safeZone
+            console.log 'safeZone', JSON.stringify(safeZone,2)
             console.log 'bufr', bufr
             if safeZone.lastRk > bufr.lastRk
                 # 1/ the safeZone is going down and the bottom of the safeZone
@@ -493,7 +506,7 @@ module.exports = class LongList
                 return
             bufr.nextLastRk = nextLastRk
 
-            initMonthRk = safeZone_startPt.monthRk
+            initMonthRk = safeZone_startPt.firstMonthRk
             for monthRk in [initMonthRk..months.length-1] by 1
                 month = months[monthRk]
                 if nextLastRk <= month.lastRk
@@ -522,7 +535,7 @@ module.exports = class LongList
 
 
         _SZ_initStartPoint = ()=>
-            szStart = safeZone_startPt
+            SZ = safeZone_startPt
             Y = @viewPort$.scrollTop
             for month, monthRk in @months
                 if month.yBottom > Y
@@ -531,52 +544,50 @@ module.exports = class LongList
             if inMonthRow < 0
                 # happens if the viewport is in the header of a month
                 inMonthRow = 0
-            szStart.rank           = month.firstRk + inMonthRow * nThumbsPerRow
-            szStart.firstVisibleRk = szStart.rank
-            szStart.firstThumbToUpdate = null
-            szStart.y              = month.y + monthTopPadding + inMonthRow * rowHeight
-            szStart.monthRk        = monthRk
-            szStart.inMonthRow     = inMonthRow
-            szStart.col            = 0
+            SZ.firstRk  = month.firstRk + inMonthRow * nThumbsPerRow
+            SZ.firstY   = month.y + monthTopPadding + inMonthRow * rowHeight
+            SZ.firstMonthRk  = monthRk
+            SZ.firstCol = 0
+            SZ.firstThumbToUpdate = null
+            SZ.firstInMonthRow         = inMonthRow
+            SZ.firstVisibleRk     = SZ.firstRk
 
 
         _SZ_setMarginAtStart= () =>
-
-            inMonthRow = safeZone_startPt.inMonthRow - nRowsInSafeZoneMargin
+            SZ = safeZone_startPt
+            inMonthRow = SZ.firstInMonthRow - nRowsInSafeZoneMargin
 
             if inMonthRow >= 0
                 # the row that we are looking for is in the current month
                 # (monthRk and col are not changed then)
-                month = @months[safeZone_startPt.monthRk]
-                safeZone_startPt.rank = month.firstRk + inMonthRow * nThumbsPerRow
-                safeZone_startPt.y    = month.y + monthTopPadding + inMonthRow*rowHeight
-                safeZone_startPt.inMonthRow = inMonthRow
+                month = @months[SZ.firstMonthRk]
+                SZ.firstRk = month.firstRk + inMonthRow * nThumbsPerRow
+                SZ.firstY  = month.y + monthTopPadding + inMonthRow*rowHeight
+                SZ.firstInMonthRow = inMonthRow
                 return
 
             else
                 # the row that we are looking for is before the current month
                 # (col remains 0)
-                rowsSeen = safeZone_startPt.inMonthRow
-                for j in [safeZone_startPt.monthRk-1..0] by -1
+                rowsSeen = SZ.firstInMonthRow
+                for j in [SZ.firstMonthRk-1..0] by -1
                     month = @months[j]
                     if rowsSeen + month.nRows >= nRowsInSafeZoneMargin
-                        inMonthRow                  = month.nRows - nRowsInSafeZoneMargin + rowsSeen
-                        safeZone_startPt.rank       = month.firstRk + inMonthRow * nThumbsPerRow
-                        safeZone_startPt.y          = month.y + monthTopPadding + inMonthRow*rowHeight
-                        safeZone_startPt.inMonthRow = inMonthRow
-                        safeZone_startPt.monthRk    = j
+                        inMonthRow         = month.nRows - nRowsInSafeZoneMargin + rowsSeen
+                        SZ.firstRk         = month.firstRk + inMonthRow * nThumbsPerRow
+                        SZ.firstY          = month.y + monthTopPadding + inMonthRow*rowHeight
+                        SZ.firstInMonthRow = inMonthRow
+                        SZ.firstMonthRk    = j
                         return
 
                     else
                         rowsSeen += month.nRows
 
-            safeZone_startPt.rank       = 0
-            safeZone_startPt.monthRk    = 0
-            safeZone_startPt.inMonthRow = 0
-            safeZone_startPt.col        = 0
-            safeZone_startPt.y          = monthTopPadding
-
-
+            SZ.firstRk         = 0
+            SZ.firstMonthRk    = 0
+            SZ.firstInMonthRow = 0
+            SZ.firstCol        = 0
+            SZ.firstY          = monthTopPadding
 
 
         ###*
@@ -584,65 +595,65 @@ module.exports = class LongList
          * thumb
         ###
         _moveUp_SafeZone_startPt_ofNThumbs = (n) =>
-
-            targetRk = safeZone_startPt.rank - n
+            SZ = safeZone_startPt
+            targetRk = SZ.firstRk - n
 
             if targetRk < 0
-                safeZone_startPt.rank       = 0
-                safeZone_startPt.monthRk    = 0
-                safeZone_startPt.inMonthRow = 0
-                safeZone_startPt.col        = 0
-                safeZone_startPt.y          = monthTopPadding
+                SZ.firstRk         = 0
+                SZ.firstMonthRk    = 0
+                SZ.firstInMonthRow = 0
+                SZ.firstCol        = 0
+                SZ.firstY          = monthTopPadding
                 return true
 
 
-            for monthRk in [safeZone_startPt.monthRk-1..0] by -1
+            for monthRk in [SZ.firstMonthRk-1..0] by -1
                 month = months[monthRk]
                 if targetRk <= month.lastRk
-                    safeZone_startPt.rank       = targetRk
-                    safeZone_startPt.monthRk    = monthRk
-                    inMonthRk                   = targetRk - month.firstRk
-                    inMonthRow                  = Math.floor(inMonthRk/nThumbsPerRow)
-                    safeZone_startPt.inMonthRow = inMonthRow
-                    safeZone_startPt.col        = inMonthRk % nThumbsPerRow
-                    safeZone_startPt.y          = month.y + monthTopPadding + inMonthRow*rowHeight
+                    SZ.firstRk         = targetRk
+                    SZ.firstMonthRk    = monthRk
+                    inMonthRk          = targetRk - month.firstRk
+                    inMonthRow         = Math.floor(inMonthRk/nThumbsPerRow)
+                    SZ.firstInMonthRow = inMonthRow
+                    SZ.firstCol        = inMonthRk % nThumbsPerRow
+                    SZ.firstY            = month.y + monthTopPadding + inMonthRow*rowHeight
                     return false
 
-            # if months[safeZone_startPt.monthRk].firstRk <= targetRk
+            # if months[SZ.firstMonthRk].firstRk <= targetRk
 
 
 
             if inMonthRow >= 0
                 # the row that we are looking for is in the current month
-                # (monthRk and col are not changed then)
-                month = @months[safeZone_startPt.monthRk]
-                safeZone_startPt.rank = month.firstRk + inMonthRow * nThumbsPerRow
-                safeZone_startPt.y    = month.y + monthTopPadding + inMonthRow*rowHeight
-                safeZone_startPt.inMonthRow = inMonthRow
+                # (firstMonthRk and firstCol are not changed then)
+                month              = @months[SZ.firstMonthRk]
+                SZ.firstRk         = month.firstRk + inMonthRow * nThumbsPerRow
+                SZ.firstY            = month.y + monthTopPadding + inMonthRow*rowHeight
+                SZ.firstInMonthRow = inMonthRow
                 return
 
             else
                 # the row that we are looking for is before the current month
-                # (col remains 0)
-                rowsSeen = safeZone_startPt.inMonthRow
-                for j in [safeZone_startPt.monthRk-1..0] by -1
+                # (firstCol remains 0)
+                rowsSeen = SZ.firstInMonthRow
+                for j in [SZ.firstMonthRk-1..0] by -1
                     month = @months[j]
                     if rowsSeen + month.nRows >= nRowsInSafeZoneMargin
-                        inMonthRow = month.nRows - nRowsInSafeZoneMargin + rowsSeen
-                        safeZone_startPt.rank = month.firstRk + inMonthRow * nThumbsPerRow
-                        safeZone_startPt.y    = month.y + monthTopPadding + inMonthRow*rowHeight
-                        safeZone_startPt.inMonthRow = inMonthRow
-                        safeZone_startPt.monthRk = j
+                        inMonthRow         = month.nRows - nRowsInSafeZoneMargin + rowsSeen
+                        SZ.firstRk         = month.firstRk + inMonthRow * nThumbsPerRow
+                        SZ.firstY            = month.y + monthTopPadding + inMonthRow*rowHeight
+                        SZ.firstInMonthRow = inMonthRow
+                        SZ.firstMonthRk    = j
                         return
 
                     else
                         rowsSeen += month.nRows
 
-            safeZone_startPt.rank         = 0
-            safeZone_startPt.monthRk      = 0
-            safeZone_startPt.inMonthRow = 0
-            safeZone_startPt.col          = 0
-            safeZone_startPt.y            = monthTopPadding
+            SZ.firstRk         = 0
+            SZ.firstMonthRk    = 0
+            SZ.firstInMonthRow = 0
+            SZ.firstCol        = 0
+            SZ.firstY            = monthTopPadding
 
 
         ###*
@@ -650,14 +661,15 @@ module.exports = class LongList
          * thumb
         ###
         _SZ_initEndPoint = () =>
-            lastRk = safeZone_startPt.rank + nThumbsInSafeZone - 1
+            SZ = safeZone_startPt
+            lastRk = SZ.firstRk + nThumbsInSafeZone - 1
             if lastRk >= @nPhotos
                 lastRk = @nPhotos - 1
                 safeZone_endPt.rank = lastRk
                 # other safeZone_endPt are useless (safeZone is going down)
                 return true
             #
-            for monthRk in [safeZone_startPt.monthRk..months.length-1]
+            for monthRk in [SZ.firstMonthRk..months.length-1]
                 month = months[monthRk]
                 if lastRk <= month.lastRk
                     break
@@ -671,8 +683,8 @@ module.exports = class LongList
             return false
 
 
-        # todo bja : à renommer
-        _SZ_bottomCase= ()=>
+        _SZ_bottomCase = ()=>
+            SZ = safeZone_startPt
             months       = @months
             monthRk      = months.length - 1
             thumbsSeen   = 0
@@ -686,19 +698,19 @@ module.exports = class LongList
                 # happens if the number of photo is smaller than the number
                 # in safezone (nThumbsInSafeZone), it means that safe zone
                 # begins at the first photo
-                safeZone_startPt.monthRk    = 0
-                safeZone_startPt.inMonthRow = 0
-                safeZone_startPt.rank       = 0
-                safeZone_startPt.y          = month.y + cellPadding + monthHeaderHeight
+                SZ.firstMonthRk    = 0
+                SZ.firstInMonthRow = 0
+                SZ.firstRk         = 0
+                SZ.firstY          = month.y + cellPadding + monthHeaderHeight
             else
                 rk         = @nPhotos - thumbsTarget
                 inMonthRk  = rk - month.firstRk
                 inMonthRow = Math.floor(inMonthRk / nThumbsPerRow)
 
-                safeZone_startPt.monthRk    = monthRk
-                safeZone_startPt.inMonthRow = inMonthRow
-                safeZone_startPt.rank       = rk
-                safeZone_startPt.y          = month.y + cellPadding + monthHeaderHeight + inMonthRow*rowHeight
+                SZ.firstMonthRk    = monthRk
+                SZ.firstInMonthRow = inMonthRow
+                SZ.firstRk         = rk
+                SZ.firstY          = month.y + cellPadding + monthHeaderHeight + inMonthRow*rowHeight
 
 
         _createThumbsBottom = (nToCreate, startRk, startCol, startY, monthRk) =>
