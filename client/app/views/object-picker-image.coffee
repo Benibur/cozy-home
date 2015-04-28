@@ -37,7 +37,7 @@ module.exports = class ObjectPickerImage
 
 
     getObject : () ->
-        return "files/screens/#{@longList.getSelectedID()}.jpg"
+        return "files/photo/screens/#{@longList.getSelectedID()}.jpg"
 
 
     setFocusIfExpected : () ->
@@ -48,33 +48,33 @@ module.exports = class ObjectPickerImage
 
     keyHandler : (e)->
         ####
-        # console.log 'ObjectPickerImage.keyHandler', e.which
-        # switch e.which
-        #     when 27 # escape key
-        #         e.stopPropagation()
-        #         @objectPicker.onNo()
-        #     when 13 # return key
-        #         e.stopPropagation()
-        #         @objectPicker.onYes()
-        #     when 39 # right key
-        #         e.stopPropagation()
-        #         e.preventDefault()
-        #         @_selectNextThumb()
-        #     when 37 # left key
-        #         e.stopPropagation()
-        #         e.preventDefault()
-        #         @_selectPreviousThumb()
-        #     when 38 # up key
-        #         e.stopPropagation()
-        #         e.preventDefault()
-        #         @_selectThumbUp()
-        #     when 40 # down key
-        #         e.stopPropagation()
-        #         e.preventDefault()
-        #         @_selectThumbDown()
-        #     else
-        #         return false
-        return @longList.keyHandler(e)
+        console.log 'ObjectPickerImage.keyHandler', e.which
+        switch e.which
+            when 27 # escape key
+                e.stopPropagation()
+                @objectPicker.onNo()
+            when 13 # return key
+                e.stopPropagation()
+                @objectPicker.onYes()
+            # when 39 # right key
+            #     e.stopPropagation()
+            #     e.preventDefault()
+            #     @_selectNextThumb()
+            # when 37 # left key
+            #     e.stopPropagation()
+            #     e.preventDefault()
+            #     @_selectPreviousThumb()
+            # when 38 # up key
+            #     e.stopPropagation()
+            #     e.preventDefault()
+            #     @_selectThumbUp()
+            # when 40 # down key
+            #     e.stopPropagation()
+            #     e.preventDefault()
+            #     @_selectThumbDown()
+            else
+                return @longList.keyHandler(e)
+        return
 
 
 #####################

@@ -58,28 +58,40 @@ Photo    = require '../models/photo'
 #      nextLastCol     : {integer}
 #      nextLastY       : {integer}
 #      nextLastMonthRk : {integer}
+#      # the following data are the coordonates of the thumb that would be just
+#      # before the last of the buffer.
+#      nextFirstCol     : {integer}
+#      nextFirstMonthRk : {integer}
+#      nextFirstRk      : {integer}
+#      nextFirstY       : {integer}
 #   Lists all the created thumbs, keep a reference on the first (top
 #   most) and the last (bottom most) cells. The data structure of the buffer
 #   is a doubled linked list.
 #   each element of the list is an object
 #
 # 7/ thumb
-#      prev : {thumb}   # previous thumb in the buffer ()
-#      next :
-#      el   : {thumb$}  # element in the dom of the thumb
+#      prev : {thumb}   # previous thumb in the buffer : older, lower in the list
+#      next : {thumb}   # next thumb in the buffer : more recent, higher in the list
+#      el   : {thumb$}  # element in the DOM of the thumb
 #      rank : {integer} # rank of the corresponding image
 #      id   : {integer} # id of the corresponding image
 #   Element of the buffer, keeps a reference (el) to the thumb element inserted
 #   in the DOM.
 #
 # 8/ safeZone
-#   firstVisibleRk     : {integer}
-#   firstThumbToUpdate : {thumb}
-#   rank               : {integer}
-#   monthRk            : {integer}
-#   inMonthRow         : {integer}
-#   col                : {integer}
-#   y                  : {integer}
+#      firstCol             : {integer}
+#      firstInMonthRow      : {integer}
+#      firstMonthRk         : {integer}
+#      firstRk              : {integer}
+#      firstThumbRkToUpdate : {integer}
+#      firstThumbToUpdate   : {thumb}
+#      firstVisibleRk       : {integer}
+#      firstY               : {integer}
+#      lastRk               : {integer}
+#      endCol               : {integer}
+#      endMonthRk           : {integer}
+#      endY                 : {integer}
+
 #
 #
 ################################################################################
@@ -89,7 +101,7 @@ Photo    = require '../models/photo'
 ## CONSTANTS ##
 #
 # minimum duration between two refresh (_adaptBuffer)
-THROTTLE            = 350
+THROTTLE            = 2350
 # number of "screens" before and after the viewport
 # (ex : 1.5 => 1+2*1.5=4 screens always ready)
 COEF_SECURITY       = 1.5
@@ -109,7 +121,7 @@ module.exports = class LongList
         ####
         # init state
         @state =
-            selected    : {} # selected.photoID = thumb = {id,name,thumbEl}
+            selected    : {} # selected.photoID = thumb = {rank, id,name,thumbEl}
             selected_n  : 0  # number of photos selected
             skip        : 0  # rank of the oldest downloaded thumb
             percent     : 0  # % of thumbnails computation avancement (if any)
@@ -123,7 +135,10 @@ module.exports = class LongList
         @thumbs$.style.position   = 'absolute'
         ####
         # controlers
-        @buffer   = @_initBuffer()
+        @_initBuffer()
+        ####
+        # keep track of the last selected column during navigation with keyboard
+        @_lastSelectedCol = null
         ####
         # adapt buffer to the initial geometry when we receive the array of
         # photos
@@ -133,7 +148,7 @@ module.exports = class LongList
             if @isInited
                 ####
                 # create DOM_controler
-                @DOM_controler = @_DOM_controlerInit()
+                @_DOM_controlerInit()
             else
                 @isPhotoArrayLoaded = true
             return true
@@ -143,52 +158,62 @@ module.exports = class LongList
         if @isPhotoArrayLoaded
             ####
             # create DOM_controler
-            @DOM_controler = @_DOM_controlerInit()
+            @_DOM_controlerInit()
         else
             @isInited = true
         return true
 
 
     getSelectedID : () =>
-        for k, val of @state.selected
-            if typeof(val)=='object'
+        for k, thumb$ of @state.selected
+            if thumb$
                 return k
         return null
 
 
     keyHandler : (e)->
-        ####
-        # console.log 'ObjectPickerImage.keyHandler', e.which
-        # switch e.which
-        #     when 27 # escape key
-        #         e.stopPropagation()
-        #         @objectPicker.onNo()
-        #     when 13 # return key
-        #         e.stopPropagation()
-        #         @objectPicker.onYes()
-        #     when 39 # right key
-        #         e.stopPropagation()
-        #         e.preventDefault()
-        #         @_selectNextThumb()
-        #     when 37 # left key
-        #         e.stopPropagation()
-        #         e.preventDefault()
-        #         @_selectPreviousThumb()
-        #     when 38 # up key
-        #         e.stopPropagation()
-        #         e.preventDefault()
-        #         @_selectThumbUp()
-        #     when 40 # down key
-        #         e.stopPropagation()
-        #         e.preventDefault()
-        #         @_selectThumbDown()
-        #     else
-        #         return false
-        return @longList.keyHandler(e)
+        console.log 'LongList.keyHandler', e.which
+        switch e.which
+            when 39 # right key
+                e.stopPropagation()
+                e.preventDefault()
+                @_selectNextThumb()
+            when 37 # left key
+                e.stopPropagation()
+                e.preventDefault()
+                @_selectPreviousThumb()
+            when 38 # up key
+                e.stopPropagation()
+                e.preventDefault()
+                @_selectThumbUp()
+            when 40 # down key
+                e.stopPropagation()
+                e.preventDefault()
+                @_selectThumbDown()
+            when 36 # start line key
+                e.stopPropagation()
+                e.preventDefault()
+                @_selectStartLineThumb()
+            when 35 # end line key
+                e.stopPropagation()
+                e.preventDefault()
+                @_selectEndLineThumb()
+            when 34 # page down key
+                e.stopPropagation()
+                e.preventDefault()
+                @_selectPageDownThumb()
+            when 33 # page up key
+                e.stopPropagation()
+                e.preventDefault()
+                @_selectPageUpThumb()
+            else
+                return false
+        return
 
 
 ################################################################################
 ## PRIVATE SECTION ##
+
 
     _initBuffer : ()->
         thumb$ = document.createElement('img')
@@ -199,22 +224,40 @@ module.exports = class LongList
             next : null
             el   : thumb$
             rank : null
+            id   : null
         thumb.prev = thumb
         thumb.next = thumb
 
-        return {
-                first   : thumb
-                firstRk : - 1
-                last    : thumb
-                lastRk  : - 1
-                nThumbs : 1
+        @buffer =
+                first   : thumb  # top most thumb
+                firstRk : -1     # rank of the first image of the buffer
+                last    : thumb  # bottom most thumb
+                lastRk  : -1     # rank of the last image of the buffer
+                nThumbs :  1     # number of thumbs in the buffer
+                # the following data are the coordonates of the thumb that would be just
+                # after the last of the buffer.
                 nextLastRk      : null
                 nextLastCol     : null
                 nextLastY       : null
                 nextLastMonthRk : null
-            }
+                # the following data are the coordonates of the thumb that would be just
+                # before the last of the buffer.
+                nextFirstCol     : null
+                nextFirstMonthRk : null
+                nextFirstRk      : null
+                nextFirstY       : null
 
-
+    ###*
+     * This is the main procedure. Its scope contains all the functions used to
+     * update the buffer and the shared variables between those functions. This
+     * approach has been chosen for performance reasons (acces to scope
+     * variables faster than to nested properties of objects). It's not an
+     * obvious choice.
+     * Called only when both LongList.init() has been called and that we also
+     * got from the server the month distribution (Photo.getMonthdistribution)
+     *
+     * @return {[type]} [description]
+    ###
     _DOM_controlerInit: () ->
 
         #######################
@@ -234,7 +277,6 @@ module.exports = class LongList
         nRowsInSafeZoneMargin = null
         nThumbsInSafeZone     = null
         viewPortDim           = null
-        safeZone_endPt        = {}
         safeZone =
             firstRk              : null
             firstMonthRk         : null
@@ -255,14 +297,7 @@ module.exports = class LongList
                 setTimeout(_adaptBuffer,THROTTLE)
                 @noScrollScheduled = false
 
-
-        _clickHandler= (e) =>
-            thumb$ = e.target
-            thumb$.classList.toggle('selectedThumb')
-            if @state.selected[thumb$.dataset.rank]
-                @state.selected[thumb$.dataset.rank]=false
-            else
-                @state.selected[thumb$.dataset.rank]=true
+        @_scrollHandler = _scrollHandler
 
 
         _resizeHandler= ()=>
@@ -337,7 +372,7 @@ module.exports = class LongList
                 # the  available thumbs are the ones in the buffer and above
                 # the safeZone
                 # (rank greater than buffer.firstRk but lower
-                # than safeZone.firtsRk)
+                # than safeZone.firstRk)
                 nAvailable = safeZone.firstRk - bufr.firstRk
                 if nAvailable < 0
                     nAvailable = 0
@@ -361,7 +396,7 @@ module.exports = class LongList
                     # bellow the top of the safeZone.
                     targetRk      = safeZone.firstRk
                     targetMonthRk = safeZone.firstMonthRk
-                    targetCol     = 0
+                    targetCol     = safeZone.firstCol
                     targetY       = safeZone.firstY
 
                 console.log 'direction: DOWN',         \
@@ -369,7 +404,9 @@ module.exports = class LongList
                             'nAvailable:'+ nAvailable, \
                             'nToCreate:' + nToCreate,  \
                             'nToMove:'   + nToMove,    \
-                            'targetRk:'  + targetRk
+                            'targetRk:'  + targetRk,   \
+                            'targetCol'  + targetCol,  \
+                            'targetY'    + targetY
 
                 if nToFind > 0
                     Photo.listFromFiles targetRk, nToFind, (error, res) ->
@@ -440,7 +477,9 @@ module.exports = class LongList
                             'nAvailable:'+ nAvailable, \
                             'nToCreate:' + nToCreate,  \
                             'nToMove:'   + nToMove,    \
-                            'targetRk:'  + targetRk
+                            'targetRk:'  + targetRk,   \
+                            'targetCol'  + targetCol,  \
+                            'targetY'    + targetY
 
                 if nToFind > 0
                     Photo.listFromFiles targetRk - nToFind + 1 , nToFind, (error, res) ->
@@ -473,13 +512,15 @@ module.exports = class LongList
             console.log 'bufr', bufr
             console.log '======_adaptBuffer==ended======='
 
+
         ###*
          * Called when we get from the server the ids of the thumbs that have
          * been created or moved
          * @param  {Array} files     [{id},..,{id}] in chronological order
          * @param  {Integer} fstFileRk The rank of the first file of files
         ###
-        _updateThumb = (files, fstFileRk)->
+        _updateThumb = (files, fstFileRk)=>
+            console.log '\n======_updateThumb started ================='
             lstFileRk = fstFileRk + files.length - 1
             bufr      = buffer
             thumb     = bufr.first
@@ -487,8 +528,11 @@ module.exports = class LongList
             firstThumbRkToUpdate = firstThumbToUpdate.rank
             last  = bufr.last
             first = bufr.first
-            console.log '\n======_updateThumb started ================='
-
+            ##
+            # 1/ if firstThumbRkToUpdate is not in the files range (can happen
+            # if the safeZone has been updated while waiting for the list of
+            # files from the server), then move firstThumbRkToUpdate to the
+            # thumb corresponding to first or last file of files.
             if firstThumbRkToUpdate < fstFileRk
                 th = firstThumbToUpdate.prev
                 while true
@@ -509,7 +553,8 @@ module.exports = class LongList
                         firstThumbRkToUpdate = th.rank
                         break
                     th = th.next
-
+            ##
+            # 2/ update src of thumbs that are after the firstThumbRkToUpdate
             if firstThumbRkToUpdate <= lstFileRk
                 console.log " update forward: #{firstThumbRkToUpdate}->#{lstFileRk}"
                 console.log "   firstThumbRkToUpdate", firstThumbRkToUpdate, "nFiles", files.length, "fstFileRk", fstFileRk, "lstFileRk",lstFileRk
@@ -517,11 +562,19 @@ module.exports = class LongList
                 console.log " update forward: none"
             thumb = firstThumbToUpdate
             for file_i in [firstThumbRkToUpdate-fstFileRk..files.length-1] by 1
-                file         = files[file_i]
-                thumb.el.src = "files/photo/thumbs/#{file.id}.jpg"
-                thumb.id     = file.id
-                thumb        = thumb.prev
-
+                file    = files[file_i]
+                fileId = file.id
+                thumb$            = thumb.el
+                thumb$.src        = "files/photo/thumbs/#{fileId}.jpg"
+                thumb$.dataset.id = fileId
+                thumb.id          = fileId
+                thumb             = thumb.prev
+                if @state.selected[fileId]
+                    thumb$.classList.add('selectedThumb')
+                else
+                    thumb$.classList.remove('selectedThumb')
+            ##
+            # 3/ update src of thumbs that are before the firstThumbRkToUpdate
             if firstThumbRkToUpdate > fstFileRk
                 console.log " update backward #{firstThumbRkToUpdate-1}->#{fstFileRk}"
                 console.log "   firstThumbRkToUpdate", firstThumbRkToUpdate, "nFiles", files.length, "fstFileRk", fstFileRk, "lstFileRk",lstFileRk
@@ -529,10 +582,18 @@ module.exports = class LongList
                 console.log " update backward: none"
             thumb = firstThumbToUpdate.next
             for file_i in [firstThumbRkToUpdate-fstFileRk-1..0] by -1
-                file         = files[file_i]
-                thumb.el.src = "files/photo/thumbs/#{file.id}.jpg"
-                thumb.id     = file.id
-                thumb        = thumb.next
+                file   = files[file_i]
+                fileId = file.id
+                thumb$            = thumb.el
+                thumb$.src        = "files/photo/thumbs/#{fileId}.jpg"
+                thumb$.dataset.id = fileId
+                thumb.id          = fileId
+                thumb             = thumb.next
+                if @state.selected[fileId]
+                    thumb$.classList.add('selectedThumb')
+                else
+                    thumb$.classList.remove('selectedThumb')
+
             console.log '======_updateThumb finished ================='
 
 
@@ -647,26 +708,29 @@ module.exports = class LongList
 
 
         ###*
+         * Finds the end point of the safeZone.
          * Returns true if the safeZone end pointer should be after the last
          * thumb
         ###
         _SZ_initEndPoint = () =>
             SZ = safeZone
             lastRk = SZ.firstRk + nThumbsInSafeZone - 1
+            # 1/ check if end of safeZone should be after the last thumb
             if lastRk >= @nPhotos
                 lastRk = @nPhotos - 1
                 safeZone.lastRk = lastRk
-                # other safeZone_endPt are useless (safeZone is going down)
+                # other safeZone end info are useless (safeZone is going down)
                 return true
-            #
+            # 2/ otherwise find the month containing the last thumb of the SZ
             for monthRk in [SZ.firstMonthRk..months.length-1]
                 month = months[monthRk]
                 if lastRk <= month.lastRk
                     break
+            # 3/ update safeZoone data
+            inMonthRk  = lastRk - month.firstRk
+            inMonthRow = Math.floor(inMonthRk/nThumbsPerRow)
             safeZone.lastRk     = lastRk
             safeZone.endMonthRk = monthRk
-            inMonthRk           = lastRk - month.firstRk
-            inMonthRow          = Math.floor(inMonthRk/nThumbsPerRow)
             safeZone.endCol     = inMonthRk % nThumbsPerRow
             safeZone.endY       = month.y         +
                                   monthTopPadding +
@@ -700,6 +764,7 @@ module.exports = class LongList
 
                 SZ.firstMonthRk    = monthRk
                 SZ.firstInMonthRow = inMonthRow
+                SZ.firstCol        = inMonthRk % nThumbsPerRow
                 SZ.firstRk         = rk
                 SZ.firstY          = month.y           +
                                      cellPadding       +
@@ -724,6 +789,7 @@ module.exports = class LongList
                     prev : bufr.first
                     el   : thumb$
                     rank : rk
+                    id   : null
                 if rk == safeZone.firstVisibleRk
                     safeZone.firstThumbToUpdate = thumb
                 bufr.first.next = thumb
@@ -733,8 +799,6 @@ module.exports = class LongList
                 style      = thumb$.style
                 style.top  = rowY + 'px'
                 style.left = (marginLeft + col*colWidth) + 'px'
-                if @state.selected[rk]
-                    thumb$.classList.add('selectedThumb')
                 @thumbs$.appendChild(thumb$)
                 localRk += 1
                 if localRk == month.nPhotos
@@ -788,10 +852,6 @@ module.exports = class LongList
                 style      = thumb$.style
                 style.top  = rowY + 'px'
                 style.left = (marginLeft + col*colWidth) + 'px'
-                if @state.selected[rk]
-                    thumb$.classList.add('selectedThumb')
-                else
-                    thumb$.classList.remove('selectedThumb')
                 # if during the move of the thumbs we meet the thumb with the
                 # firstVisibleRk, then this thumb is the firstThumbToUpdate
                 if rk == safeZone.firstVisibleRk
@@ -845,10 +905,6 @@ module.exports = class LongList
                 style               = thumb$.style
                 style.top           = rowY + 'px'
                 style.left          = (marginLeft + col*colWidth) + 'px'
-                if @state.selected[rk]
-                    thumb$.classList.add('selectedThumb')
-                else
-                    thumb$.classList.remove('selectedThumb')
                 # if during the move of the thumbs we meet the thumb with the
                 # firstVisibleRk, then this thumb is the firstThumbToUpdate
                 if rk == safeZone.firstVisibleRk
@@ -901,25 +957,316 @@ module.exports = class LongList
         # It is possible only when the longList is inserted into the DOM, that's
         # why we had to wait for _init() which occurs after both the reception
         # of the array of photo and after the parent view has launched init().
-        thumbDim    = @buffer.first.el.getBoundingClientRect()
-        thumbWidth  = thumbDim.width
-        colWidth    = thumbWidth + cellPadding
-        thumbHeight = thumbDim.height
-        rowHeight   = thumbHeight + cellPadding
+        thumbDim     = @buffer.first.el.getBoundingClientRect()
+        thumbWidth   = thumbDim.width
+        colWidth     = thumbWidth + cellPadding
+        thumbHeight  = thumbDim.height
+        @thumbHeight = thumbHeight
+        rowHeight    = thumbHeight + cellPadding
+
         ####
         # Adapt the geometry and then the buffer
         _resizeHandler()
         _adaptBuffer()
         ####
         # bind events
-        @thumbs$.addEventListener(   'click'  , _clickHandler  )
+        @thumbs$.addEventListener(   'click'  , @_clickHandler )
         @viewPort$.addEventListener( 'scroll' , _scrollHandler )
 
 
+    _clickHandler: (e) =>
+        thumb$ = e.target
+        if thumb$.src == ''
+            return # the thumb is empty (no image yet)=> we can't select it
+        @_lastSelectedCol = @_coordonate.left(thumb$)
+        @_toggleOnThumb$(thumb$)
 
-        return {_adaptBuffer, print}
+        viewPortTopY    = @viewPort$.scrollTop
+        viewPortBottomY = viewPortTopY + @viewPort$.clientHeight
+        thTopY    = @_coordonate.top(thumb$)
+        thBottomY = thTopY + @thumbHeight
+        if viewPortBottomY < thBottomY
+            thumb$.scrollIntoView(false)
+        if thTopY < viewPortTopY
+            thumb$.scrollIntoView(true)
 
 
+    _toggleOnThumb$: (thumb$)->
+        if !@state.selected[thumb$.dataset.id]
+            @_unselectAll()
+            thumb$.classList.add('selectedThumb')
+            @state.selected[thumb$.dataset.id] = thumb$
 
 
+    _unselectAll: () =>
+        for id, thumb$ of @state.selected
+            if typeof(thumb$) == 'object'
+                thumb$.classList.remove('selectedThumb')
+                @state.selected[id] = false
+
+
+    _getSelectedThumb$: ()->
+        for id, thumb$ of @state.selected
+            if typeof(thumb$) == 'object'
+                return thumb$
+        return null
+
+
+    _selectNextThumb: ()->
+        # 1/ look for the selected thumb element
+        for id, thumb$ of @state.selected
+            if typeof(thumb$) == 'object'
+                break
+        # 2/ get next thumb$ and toggle
+        nextThumb$ = @_getNextThumb$(thumb$)
+        if nextThumb$ == null
+            return
+        @_lastSelectedCol = @_coordonate.left(nextThumb$)
+        @_toggleOnThumb$(nextThumb$)
+        @_moveViewportToBottomOfThumb$(nextThumb$)
+
+
+    _selectPreviousThumb: ()->
+        # 1/ look for the selected thumb element
+        thumb$ = @_getSelectedThumb$()
+        # 2/ get previous thumb$ and toggle
+        prevThumb$ = @_getPreviousThumb$(thumb$)
+        if prevThumb$ == null
+            return
+        @_lastSelectedCol = @_coordonate.left(prevThumb$)
+        @_toggleOnThumb$(prevThumb$)
+        @_moveViewportToTopOfThumb$(prevThumb$)
+
+
+    _selectThumbUp: ()->
+        thumb$ = @_getSelectedThumb$()
+        if thumb$ == null
+            return null
+        if thumb$.dataset.rank == '0'
+            return null
+        if @_lastSelectedCol == null
+            left = @_coordonate.left(thumb$)
+        else
+            left = @_lastSelectedCol
+        top  = thumb$.style.top
+        th   = @_getPreviousThumb$(thumb$)
+        while th.style.left != left
+            if th.dataset.rank == '0'
+                @_lastSelectedCol = @_coordonate.left(th)
+                @_toggleOnThumb$(th)
+                @_moveViewportToTopOfThumb$(th)
+                return th
+            if th.style.top != top
+                # we changed of row, continue only if there are thumbs on the
+                # right
+                if @_coordonate.left(th) <= left
+                    @_toggleOnThumb$(th)
+                    @_moveViewportToTopOfThumb$(th)
+                    return th
+            th = @_getPreviousThumb$(th)
+        @_toggleOnThumb$(th)
+        @_moveViewportToTopOfThumb$(th)
+        return th
+
+
+    _selectThumbDown: ()->
+        thumb$ = @_getSelectedThumb$()
+        if thumb$ == null
+            return null
+        if @_coordonate.rank(thumb$) == @nPhotos - 1
+            return null
+        if @_lastSelectedCol == null
+            left = @_coordonate.left(thumb$)
+        else
+            left = @_lastSelectedCol
+        top  = thumb$.style.top
+        th   = @_getNextThumb$(thumb$)
+        hasAlreadyChangedOfRow = false
+        while @_coordonate.left(th) != left
+            if @_coordonate.rank(th) == @nPhotos - 1
+                @_lastSelectedCol = @_coordonate.left(th)
+                @_toggleOnThumb$(th)
+                @_moveViewportToBottomOfThumb$(th)
+                return th
+            if th.style.top != top
+                # we changed of row, continue only if there are thumbs on the
+                # right
+                if hasAlreadyChangedOfRow
+                    th = @_getPreviousThumb$(th)
+                    @_toggleOnThumb$(th)
+                    @_moveViewportToBottomOfThumb$(th)
+                    return th
+                hasAlreadyChangedOfRow = true
+                top = th.style.top
+                if @_coordonate.left(th) >= left
+                    @_toggleOnThumb$(th)
+                    @_moveViewportToBottomOfThumb$(th)
+                    return th
+            th = @_getNextThumb$(th)
+        @_toggleOnThumb$(th)
+        @_moveViewportToBottomOfThumb$(th)
+        return th
+
+
+    _selectEndLineThumb: ()->
+        thumb$ = @_getSelectedThumb$()
+        if thumb$ == null
+            return
+        if @_coordonate.rank(thumb$) == @nPhotos - 1
+            return
+        if @_lastSelectedCol == null
+            left = @_coordonate.left(thumb$)
+        else
+            left = @_lastSelectedCol
+        top  = thumb$.style.top
+        th   = @_getNextThumb$(thumb$)
+        while th.style.top == top
+            if @_coordonate.rank(th) == @nPhotos - 1
+                @_lastSelectedCol = @_coordonate.left(th)
+                @_toggleOnThumb$(th)
+                @_moveViewportToBottomOfThumb$(th)
+                return
+            th = @_getNextThumb$(th)
+        th = @_getPreviousThumb$(th)
+        @_lastSelectedCol = @_coordonate.left(th)
+        @_toggleOnThumb$(th)
+        @_moveViewportToBottomOfThumb$(th)
+        return
+
+
+    _selectStartLineThumb: ()->
+        thumb$ = @_getSelectedThumb$()
+        if thumb$ == null
+            return
+        if Number(thumb$.dataset.rank) == 0
+            return
+        if @_lastSelectedCol == null
+            left = @_coordonate.left(thumb$)
+        else
+            left = @_lastSelectedCol
+        top = thumb$.style.top
+        th  = @_getPreviousThumb$(thumb$)
+        while th.style.top == top
+            if @_coordonate.rank(th) == 0
+                @_lastSelectedCol = @_coordonate.left(th)
+                @_toggleOnThumb$(th)
+                @_moveViewportToBottomOfThumb$(th)
+                return
+            th = @_getPreviousThumb$(th)
+        th = @_getNextThumb$(th)
+        @_lastSelectedCol = @_coordonate.left(th)
+        @_toggleOnThumb$(th)
+        @_moveViewportToBottomOfThumb$(th)
+        return
+
+
+    _coordonate:
+        top: (thumb$)->
+            return Number(thumb$.style.top.slice(0,-2))
+        left: (thumb$)->
+            return Number(thumb$.style.left.slice(0,-2))
+        rank: (thumb$)->
+            return Number(thumb$.dataset.rank)
+
+
+    _selectPageDownThumb: () ->
+        viewPortBottomY = @viewPort$.scrollTop + @viewPort$.clientHeight
+        thumb$    = @_getSelectedThumb$()
+        th = thumb$
+        thTopY    = @_coordonate.top(th)
+        thBottomY = thTopY + @thumbHeight
+        while thBottomY <= viewPortBottomY
+            th = @_selectThumbDown()
+            if th == null
+                return
+            thTopY    = @_coordonate.top(th)
+            thBottomY = thTopY + @thumbHeight
+        th.scrollIntoView(true)
+
+
+    _selectPageUpThumb: () ->
+        viewPortTopY = @viewPort$.scrollTop
+        thumb$ = @_getSelectedThumb$()
+        th     = thumb$
+        thTopY = @_coordonate.top(th)
+        while thTopY >= viewPortTopY
+            th = @_selectThumbUp()
+            if th == null
+                return
+            thTopY    = @_coordonate.top(th)
+        th.scrollIntoView(false)
+
+
+    _moveViewportToBottomOfThumb$: (thumb$)->
+        thumb$Top       = @_coordonate.top(thumb$)
+        thumb$Bottom    = thumb$Top + @thumbHeight
+        viewPortBottomY = @viewPort$.scrollTop + @viewPort$.clientHeight
+        if viewPortBottomY < thumb$Bottom
+            thumb$.scrollIntoView(false)
+            @_scrollHandler()
+
+
+    _moveViewportToTopOfThumb$: (thumb$)->
+        thumb$Top   = @_coordonate.top(thumb$)
+        viewPortTop = @viewPort$.scrollTop
+        if thumb$Top < viewPortTop
+            thumb$.scrollIntoView(true)
+            @_scrollHandler()
+
+
+    ###*
+     * @param  {[type]} thumb$ # the element corresponding to the thumb
+     * @return {null}        # return null if on first thumb
+     * @return {Element}     # the previous element thumb
+    ###
+    _getPreviousThumb$: (thumbEl) ->
+        # 1/ check we are not on the first thumb
+        if thumbEl.dataset.rank == '0'
+            return null
+        # 2/ get the previous thumb
+        th = thumbEl.previousElementSibling
+        if th == null
+            # case if thumbEl is the first element => jump to the last one
+            # (what does not means it is the first displayed)
+            th = thumbEl.parentNode.lastElementChild
+            if th == thumbEl
+                # case there is only one photo
+                return null
+        while th.nodeName == 'DIV'
+            # case of a month label
+            th = th.previousElementSibling
+            if th == null
+                # case if thumbEl is the first element => jump to the last one
+                # (what does not means it is the first displayed)
+                th = thumbEl.parentNode.lastElementChild
+                if th == thumbEl
+                    # case there is only one photo
+                    return null
+        return th
+
+
+    _getNextThumb$: (thumb$) ->
+        # 1/ check we are not on the last thumb
+        if @_coordonate.rank(thumb$) == @nPhotos - 1
+            return null
+        # 2/ get the next thumb
+        th = thumb$.nextElementSibling
+        if th == null
+            # case if thumb$ is the last element => jump to the first one
+            # (what does not means it is the oldest displayed)
+            th = thumb$.parentNode.firstElementChild
+            if th == thumb$
+                # case there is only one photo
+                return null
+        while th.nodeName == 'DIV'
+            # case of a month label
+            th = th.nextElementSibling
+            if th == null
+                # case if thumb$ is the last element => jump to the first one
+                # (what does not means it is the oldest displayed)
+                th = thumb$.parentNode.firstElementChild
+                if th == thumb$
+                    # case there is only one photo
+                    return null
+        return th
 

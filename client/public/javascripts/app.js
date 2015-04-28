@@ -4609,7 +4609,7 @@ var CELL_PADDING, COEF_SECURITY, LongList, MONTH_HEADER_HEIGHT, Photo, THROTTLE,
 
 Photo = require('../models/photo');
 
-THROTTLE = 350;
+THROTTLE = 2350;
 
 COEF_SECURITY = 1.5;
 
@@ -4621,6 +4621,8 @@ module.exports = LongList = (function() {
   function LongList(viewPort$) {
     var _this = this;
     this.viewPort$ = viewPort$;
+    this._unselectAll = __bind(this._unselectAll, this);
+    this._clickHandler = __bind(this._clickHandler, this);
     this.getSelectedID = __bind(this.getSelectedID, this);
     this.init = __bind(this.init, this);
     this.state = {
@@ -4633,11 +4635,12 @@ module.exports = LongList = (function() {
     this.viewPort$.appendChild(this.thumbs$);
     this.viewPort$.style.position = 'relative';
     this.thumbs$.style.position = 'absolute';
-    this.buffer = this._initBuffer();
+    this._initBuffer();
+    this._lastSelectedCol = null;
     Photo.getMonthdistribution(function(error, res) {
       _this.months = res;
       if (_this.isInited) {
-        _this.DOM_controler = _this._DOM_controlerInit();
+        _this._DOM_controlerInit();
       } else {
         _this.isPhotoArrayLoaded = true;
       }
@@ -4647,7 +4650,7 @@ module.exports = LongList = (function() {
 
   LongList.prototype.init = function() {
     if (this.isPhotoArrayLoaded) {
-      this.DOM_controler = this._DOM_controlerInit();
+      this._DOM_controlerInit();
     } else {
       this.isInited = true;
     }
@@ -4655,11 +4658,11 @@ module.exports = LongList = (function() {
   };
 
   LongList.prototype.getSelectedID = function() {
-    var k, val, _ref;
+    var k, thumb$, _ref;
     _ref = this.state.selected;
     for (k in _ref) {
-      val = _ref[k];
-      if (typeof val === 'object') {
+      thumb$ = _ref[k];
+      if (thumb$) {
         return k;
       }
     }
@@ -4667,7 +4670,51 @@ module.exports = LongList = (function() {
   };
 
   LongList.prototype.keyHandler = function(e) {
-    return this.longList.keyHandler(e);
+    console.log('LongList.keyHandler', e.which);
+    switch (e.which) {
+      case 39:
+        e.stopPropagation();
+        e.preventDefault();
+        this._selectNextThumb();
+        break;
+      case 37:
+        e.stopPropagation();
+        e.preventDefault();
+        this._selectPreviousThumb();
+        break;
+      case 38:
+        e.stopPropagation();
+        e.preventDefault();
+        this._selectThumbUp();
+        break;
+      case 40:
+        e.stopPropagation();
+        e.preventDefault();
+        this._selectThumbDown();
+        break;
+      case 36:
+        e.stopPropagation();
+        e.preventDefault();
+        this._selectStartLineThumb();
+        break;
+      case 35:
+        e.stopPropagation();
+        e.preventDefault();
+        this._selectEndLineThumb();
+        break;
+      case 34:
+        e.stopPropagation();
+        e.preventDefault();
+        this._selectPageDownThumb();
+        break;
+      case 33:
+        e.stopPropagation();
+        e.preventDefault();
+        this._selectPageUpThumb();
+        break;
+      default:
+        return false;
+    }
   };
 
   LongList.prototype._initBuffer = function() {
@@ -4679,11 +4726,12 @@ module.exports = LongList = (function() {
       prev: null,
       next: null,
       el: thumb$,
-      rank: null
+      rank: null,
+      id: null
     };
     thumb.prev = thumb;
     thumb.next = thumb;
-    return {
+    return this.buffer = {
       first: thumb,
       firstRk: -1,
       last: thumb,
@@ -4692,12 +4740,29 @@ module.exports = LongList = (function() {
       nextLastRk: null,
       nextLastCol: null,
       nextLastY: null,
-      nextLastMonthRk: null
+      nextLastMonthRk: null,
+      nextFirstCol: null,
+      nextFirstMonthRk: null,
+      nextFirstRk: null,
+      nextFirstY: null
     };
   };
 
+  /**
+   * This is the main procedure. Its scope contains all the functions used to
+   * update the buffer and the shared variables between those functions. This
+   * approach has been chosen for performance reasons (acces to scope
+   * variables faster than to nested properties of objects). It's not an
+   * obvious choice.
+   * Called only when both LongList.init() has been called and that we also
+   * got from the server the month distribution (Photo.getMonthdistribution)
+   *
+   * @return {[type]} [description]
+  */
+
+
   LongList.prototype._DOM_controlerInit = function() {
-    var buffer, cellPadding, colWidth, marginLeft, monthHeaderHeight, monthTopPadding, months, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, rowHeight, safeZone, safeZone_endPt, thumbDim, thumbHeight, thumbWidth, viewPortDim, _SZ_bottomCase, _SZ_initEndPoint, _SZ_initStartPoint, _SZ_setMarginAtStart, _adaptBuffer, _clickHandler, _computeSafeZone, _createThumbsBottom, _getBufferNextFirst, _getBufferNextLast, _insertMonthLabel, _moveBufferToBottom, _moveBufferToTop, _resizeHandler, _scrollHandler, _updateThumb,
+    var buffer, cellPadding, colWidth, marginLeft, monthHeaderHeight, monthTopPadding, months, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, rowHeight, safeZone, thumbDim, thumbHeight, thumbWidth, viewPortDim, _SZ_bottomCase, _SZ_initEndPoint, _SZ_initStartPoint, _SZ_setMarginAtStart, _adaptBuffer, _computeSafeZone, _createThumbsBottom, _getBufferNextFirst, _getBufferNextLast, _insertMonthLabel, _moveBufferToBottom, _moveBufferToTop, _resizeHandler, _scrollHandler, _updateThumb,
       _this = this;
     months = this.months;
     buffer = this.buffer;
@@ -4713,7 +4778,6 @@ module.exports = LongList = (function() {
     nRowsInSafeZoneMargin = null;
     nThumbsInSafeZone = null;
     viewPortDim = null;
-    safeZone_endPt = {};
     safeZone = {
       firstRk: null,
       firstMonthRk: null,
@@ -4734,16 +4798,7 @@ module.exports = LongList = (function() {
         return _this.noScrollScheduled = false;
       }
     };
-    _clickHandler = function(e) {
-      var thumb$;
-      thumb$ = e.target;
-      thumb$.classList.toggle('selectedThumb');
-      if (_this.state.selected[thumb$.dataset.rank]) {
-        return _this.state.selected[thumb$.dataset.rank] = false;
-      } else {
-        return _this.state.selected[thumb$.dataset.rank] = true;
-      }
-    };
+    this._scrollHandler = _scrollHandler;
     _resizeHandler = function() {
       var month, nPhotos, nPhotosInMonth, nRowsInViewPort, nThumbsInSafeZoneMargin, nThumbsInViewPort, nextY, width, _i, _len, _ref;
       width = _this.viewPort$.clientWidth;
@@ -4821,10 +4876,10 @@ module.exports = LongList = (function() {
         } else {
           targetRk = safeZone.firstRk;
           targetMonthRk = safeZone.firstMonthRk;
-          targetCol = 0;
+          targetCol = safeZone.firstCol;
           targetY = safeZone.firstY;
         }
-        console.log('direction: DOWN', 'nToFind:' + nToFind, 'nAvailable:' + nAvailable, 'nToCreate:' + nToCreate, 'nToMove:' + nToMove, 'targetRk:' + targetRk);
+        console.log('direction: DOWN', 'nToFind:' + nToFind, 'nAvailable:' + nAvailable, 'nToCreate:' + nToCreate, 'nToMove:' + nToMove, 'targetRk:' + targetRk, 'targetCol' + targetCol, 'targetY' + targetY);
         if (nToFind > 0) {
           Photo.listFromFiles(targetRk, nToFind, function(error, res) {
             if (Error) {
@@ -4863,7 +4918,7 @@ module.exports = LongList = (function() {
           targetMonthRk = safeZone.endMonthRk;
           targetY = safeZone.endY;
         }
-        console.log('direction: UP', 'nToFind:' + nToFind, 'nAvailable:' + nAvailable, 'nToCreate:' + nToCreate, 'nToMove:' + nToMove, 'targetRk:' + targetRk);
+        console.log('direction: UP', 'nToFind:' + nToFind, 'nAvailable:' + nAvailable, 'nToCreate:' + nToCreate, 'nToMove:' + nToMove, 'targetRk:' + targetRk, 'targetCol' + targetCol, 'targetY' + targetY);
         if (nToFind > 0) {
           Photo.listFromFiles(targetRk - nToFind + 1, nToFind, function(error, res) {
             if (Error) {
@@ -4898,7 +4953,8 @@ module.exports = LongList = (function() {
     */
 
     _updateThumb = function(files, fstFileRk) {
-      var bufr, file, file_i, first, firstThumbRkToUpdate, firstThumbToUpdate, last, lstFileRk, th, thumb, _i, _j, _ref, _ref1, _ref2;
+      var bufr, file, fileId, file_i, first, firstThumbRkToUpdate, firstThumbToUpdate, last, lstFileRk, th, thumb, thumb$, _i, _j, _ref, _ref1, _ref2;
+      console.log('\n======_updateThumb started =================');
       lstFileRk = fstFileRk + files.length - 1;
       bufr = buffer;
       thumb = bufr.first;
@@ -4906,7 +4962,6 @@ module.exports = LongList = (function() {
       firstThumbRkToUpdate = firstThumbToUpdate.rank;
       last = bufr.last;
       first = bufr.first;
-      console.log('\n======_updateThumb started =================');
       if (firstThumbRkToUpdate < fstFileRk) {
         th = firstThumbToUpdate.prev;
         while (true) {
@@ -4944,9 +4999,17 @@ module.exports = LongList = (function() {
       thumb = firstThumbToUpdate;
       for (file_i = _i = _ref = firstThumbRkToUpdate - fstFileRk, _ref1 = files.length - 1; _i <= _ref1; file_i = _i += 1) {
         file = files[file_i];
-        thumb.el.src = "files/photo/thumbs/" + file.id + ".jpg";
-        thumb.id = file.id;
+        fileId = file.id;
+        thumb$ = thumb.el;
+        thumb$.src = "files/photo/thumbs/" + fileId + ".jpg";
+        thumb$.dataset.id = fileId;
+        thumb.id = fileId;
         thumb = thumb.prev;
+        if (_this.state.selected[fileId]) {
+          thumb$.classList.add('selectedThumb');
+        } else {
+          thumb$.classList.remove('selectedThumb');
+        }
       }
       if (firstThumbRkToUpdate > fstFileRk) {
         console.log(" update backward " + (firstThumbRkToUpdate - 1) + "->" + fstFileRk);
@@ -4957,9 +5020,17 @@ module.exports = LongList = (function() {
       thumb = firstThumbToUpdate.next;
       for (file_i = _j = _ref2 = firstThumbRkToUpdate - fstFileRk - 1; _j >= 0; file_i = _j += -1) {
         file = files[file_i];
-        thumb.el.src = "files/photo/thumbs/" + file.id + ".jpg";
-        thumb.id = file.id;
+        fileId = file.id;
+        thumb$ = thumb.el;
+        thumb$.src = "files/photo/thumbs/" + fileId + ".jpg";
+        thumb$.dataset.id = fileId;
+        thumb.id = fileId;
         thumb = thumb.next;
+        if (_this.state.selected[fileId]) {
+          thumb$.classList.add('selectedThumb');
+        } else {
+          thumb$.classList.remove('selectedThumb');
+        }
       }
       return console.log('======_updateThumb finished =================');
     };
@@ -5075,6 +5146,7 @@ module.exports = LongList = (function() {
       return SZ.firstY = monthTopPadding;
     };
     /**
+     * Finds the end point of the safeZone.
      * Returns true if the safeZone end pointer should be after the last
      * thumb
     */
@@ -5094,10 +5166,10 @@ module.exports = LongList = (function() {
           break;
         }
       }
-      safeZone.lastRk = lastRk;
-      safeZone.endMonthRk = monthRk;
       inMonthRk = lastRk - month.firstRk;
       inMonthRow = Math.floor(inMonthRk / nThumbsPerRow);
+      safeZone.lastRk = lastRk;
+      safeZone.endMonthRk = monthRk;
       safeZone.endCol = inMonthRk % nThumbsPerRow;
       safeZone.endY = month.y + monthTopPadding + inMonthRow * rowHeight;
       return false;
@@ -5127,6 +5199,7 @@ module.exports = LongList = (function() {
         inMonthRow = Math.floor(inMonthRk / nThumbsPerRow);
         SZ.firstMonthRk = monthRk;
         SZ.firstInMonthRow = inMonthRow;
+        SZ.firstCol = inMonthRk % nThumbsPerRow;
         SZ.firstRk = rk;
         return SZ.firstY = month.y + cellPadding + monthHeaderHeight + inMonthRow * rowHeight;
       }
@@ -5150,7 +5223,8 @@ module.exports = LongList = (function() {
           next: bufr.last,
           prev: bufr.first,
           el: thumb$,
-          rank: rk
+          rank: rk,
+          id: null
         };
         if (rk === safeZone.firstVisibleRk) {
           safeZone.firstThumbToUpdate = thumb;
@@ -5162,9 +5236,6 @@ module.exports = LongList = (function() {
         style = thumb$.style;
         style.top = rowY + 'px';
         style.left = (marginLeft + col * colWidth) + 'px';
-        if (_this.state.selected[rk]) {
-          thumb$.classList.add('selectedThumb');
-        }
         _this.thumbs$.appendChild(thumb$);
         localRk += 1;
         if (localRk === month.nPhotos) {
@@ -5214,11 +5285,6 @@ module.exports = LongList = (function() {
         style = thumb$.style;
         style.top = rowY + 'px';
         style.left = (marginLeft + col * colWidth) + 'px';
-        if (_this.state.selected[rk]) {
-          thumb$.classList.add('selectedThumb');
-        } else {
-          thumb$.classList.remove('selectedThumb');
-        }
         if (rk === safeZone.firstVisibleRk) {
           safeZone.firstThumbToUpdate = thumb;
         }
@@ -5267,11 +5333,6 @@ module.exports = LongList = (function() {
         style = thumb$.style;
         style.top = rowY + 'px';
         style.left = (marginLeft + col * colWidth) + 'px';
-        if (_this.state.selected[rk]) {
-          thumb$.classList.add('selectedThumb');
-        } else {
-          thumb$.classList.remove('selectedThumb');
-        }
         if (rk === safeZone.firstVisibleRk) {
           safeZone.firstThumbToUpdate = thumb;
         }
@@ -5321,15 +5382,365 @@ module.exports = LongList = (function() {
     thumbWidth = thumbDim.width;
     colWidth = thumbWidth + cellPadding;
     thumbHeight = thumbDim.height;
+    this.thumbHeight = thumbHeight;
     rowHeight = thumbHeight + cellPadding;
     _resizeHandler();
     _adaptBuffer();
-    this.thumbs$.addEventListener('click', _clickHandler);
-    this.viewPort$.addEventListener('scroll', _scrollHandler);
-    return {
-      _adaptBuffer: _adaptBuffer,
-      print: print
-    };
+    this.thumbs$.addEventListener('click', this._clickHandler);
+    return this.viewPort$.addEventListener('scroll', _scrollHandler);
+  };
+
+  LongList.prototype._clickHandler = function(e) {
+    var thBottomY, thTopY, thumb$, viewPortBottomY, viewPortTopY;
+    thumb$ = e.target;
+    if (thumb$.src === '') {
+      return;
+    }
+    this._lastSelectedCol = this._coordonate.left(thumb$);
+    this._toggleOnThumb$(thumb$);
+    viewPortTopY = this.viewPort$.scrollTop;
+    viewPortBottomY = viewPortTopY + this.viewPort$.clientHeight;
+    thTopY = this._coordonate.top(thumb$);
+    thBottomY = thTopY + this.thumbHeight;
+    if (viewPortBottomY < thBottomY) {
+      thumb$.scrollIntoView(false);
+    }
+    if (thTopY < viewPortTopY) {
+      return thumb$.scrollIntoView(true);
+    }
+  };
+
+  LongList.prototype._toggleOnThumb$ = function(thumb$) {
+    if (!this.state.selected[thumb$.dataset.id]) {
+      this._unselectAll();
+      thumb$.classList.add('selectedThumb');
+      return this.state.selected[thumb$.dataset.id] = thumb$;
+    }
+  };
+
+  LongList.prototype._unselectAll = function() {
+    var id, thumb$, _ref, _results;
+    _ref = this.state.selected;
+    _results = [];
+    for (id in _ref) {
+      thumb$ = _ref[id];
+      if (typeof thumb$ === 'object') {
+        thumb$.classList.remove('selectedThumb');
+        _results.push(this.state.selected[id] = false);
+      } else {
+        _results.push(void 0);
+      }
+    }
+    return _results;
+  };
+
+  LongList.prototype._getSelectedThumb$ = function() {
+    var id, thumb$, _ref;
+    _ref = this.state.selected;
+    for (id in _ref) {
+      thumb$ = _ref[id];
+      if (typeof thumb$ === 'object') {
+        return thumb$;
+      }
+    }
+    return null;
+  };
+
+  LongList.prototype._selectNextThumb = function() {
+    var id, nextThumb$, thumb$, _ref;
+    _ref = this.state.selected;
+    for (id in _ref) {
+      thumb$ = _ref[id];
+      if (typeof thumb$ === 'object') {
+        break;
+      }
+    }
+    nextThumb$ = this._getNextThumb$(thumb$);
+    if (nextThumb$ === null) {
+      return;
+    }
+    this._lastSelectedCol = this._coordonate.left(nextThumb$);
+    this._toggleOnThumb$(nextThumb$);
+    return this._moveViewportToBottomOfThumb$(nextThumb$);
+  };
+
+  LongList.prototype._selectPreviousThumb = function() {
+    var prevThumb$, thumb$;
+    thumb$ = this._getSelectedThumb$();
+    prevThumb$ = this._getPreviousThumb$(thumb$);
+    if (prevThumb$ === null) {
+      return;
+    }
+    this._lastSelectedCol = this._coordonate.left(prevThumb$);
+    this._toggleOnThumb$(prevThumb$);
+    return this._moveViewportToTopOfThumb$(prevThumb$);
+  };
+
+  LongList.prototype._selectThumbUp = function() {
+    var left, th, thumb$, top;
+    thumb$ = this._getSelectedThumb$();
+    if (thumb$ === null) {
+      return null;
+    }
+    if (thumb$.dataset.rank === '0') {
+      return null;
+    }
+    if (this._lastSelectedCol === null) {
+      left = this._coordonate.left(thumb$);
+    } else {
+      left = this._lastSelectedCol;
+    }
+    top = thumb$.style.top;
+    th = this._getPreviousThumb$(thumb$);
+    while (th.style.left !== left) {
+      if (th.dataset.rank === '0') {
+        this._lastSelectedCol = this._coordonate.left(th);
+        this._toggleOnThumb$(th);
+        this._moveViewportToTopOfThumb$(th);
+        return th;
+      }
+      if (th.style.top !== top) {
+        if (this._coordonate.left(th) <= left) {
+          this._toggleOnThumb$(th);
+          this._moveViewportToTopOfThumb$(th);
+          return th;
+        }
+      }
+      th = this._getPreviousThumb$(th);
+    }
+    this._toggleOnThumb$(th);
+    this._moveViewportToTopOfThumb$(th);
+    return th;
+  };
+
+  LongList.prototype._selectThumbDown = function() {
+    var hasAlreadyChangedOfRow, left, th, thumb$, top;
+    thumb$ = this._getSelectedThumb$();
+    if (thumb$ === null) {
+      return null;
+    }
+    if (this._coordonate.rank(thumb$) === this.nPhotos - 1) {
+      return null;
+    }
+    if (this._lastSelectedCol === null) {
+      left = this._coordonate.left(thumb$);
+    } else {
+      left = this._lastSelectedCol;
+    }
+    top = thumb$.style.top;
+    th = this._getNextThumb$(thumb$);
+    hasAlreadyChangedOfRow = false;
+    while (this._coordonate.left(th) !== left) {
+      if (this._coordonate.rank(th) === this.nPhotos - 1) {
+        this._lastSelectedCol = this._coordonate.left(th);
+        this._toggleOnThumb$(th);
+        this._moveViewportToBottomOfThumb$(th);
+        return th;
+      }
+      if (th.style.top !== top) {
+        if (hasAlreadyChangedOfRow) {
+          th = this._getPreviousThumb$(th);
+          this._toggleOnThumb$(th);
+          this._moveViewportToBottomOfThumb$(th);
+          return th;
+        }
+        hasAlreadyChangedOfRow = true;
+        top = th.style.top;
+        if (this._coordonate.left(th) >= left) {
+          this._toggleOnThumb$(th);
+          this._moveViewportToBottomOfThumb$(th);
+          return th;
+        }
+      }
+      th = this._getNextThumb$(th);
+    }
+    this._toggleOnThumb$(th);
+    this._moveViewportToBottomOfThumb$(th);
+    return th;
+  };
+
+  LongList.prototype._selectEndLineThumb = function() {
+    var left, th, thumb$, top;
+    thumb$ = this._getSelectedThumb$();
+    if (thumb$ === null) {
+      return;
+    }
+    if (this._coordonate.rank(thumb$) === this.nPhotos - 1) {
+      return;
+    }
+    if (this._lastSelectedCol === null) {
+      left = this._coordonate.left(thumb$);
+    } else {
+      left = this._lastSelectedCol;
+    }
+    top = thumb$.style.top;
+    th = this._getNextThumb$(thumb$);
+    while (th.style.top === top) {
+      if (this._coordonate.rank(th) === this.nPhotos - 1) {
+        this._lastSelectedCol = this._coordonate.left(th);
+        this._toggleOnThumb$(th);
+        this._moveViewportToBottomOfThumb$(th);
+        return;
+      }
+      th = this._getNextThumb$(th);
+    }
+    th = this._getPreviousThumb$(th);
+    this._lastSelectedCol = this._coordonate.left(th);
+    this._toggleOnThumb$(th);
+    this._moveViewportToBottomOfThumb$(th);
+  };
+
+  LongList.prototype._selectStartLineThumb = function() {
+    var left, th, thumb$, top;
+    thumb$ = this._getSelectedThumb$();
+    if (thumb$ === null) {
+      return;
+    }
+    if (Number(thumb$.dataset.rank) === 0) {
+      return;
+    }
+    if (this._lastSelectedCol === null) {
+      left = this._coordonate.left(thumb$);
+    } else {
+      left = this._lastSelectedCol;
+    }
+    top = thumb$.style.top;
+    th = this._getPreviousThumb$(thumb$);
+    while (th.style.top === top) {
+      if (this._coordonate.rank(th) === 0) {
+        this._lastSelectedCol = this._coordonate.left(th);
+        this._toggleOnThumb$(th);
+        this._moveViewportToBottomOfThumb$(th);
+        return;
+      }
+      th = this._getPreviousThumb$(th);
+    }
+    th = this._getNextThumb$(th);
+    this._lastSelectedCol = this._coordonate.left(th);
+    this._toggleOnThumb$(th);
+    this._moveViewportToBottomOfThumb$(th);
+  };
+
+  LongList.prototype._coordonate = {
+    top: function(thumb$) {
+      return Number(thumb$.style.top.slice(0, -2));
+    },
+    left: function(thumb$) {
+      return Number(thumb$.style.left.slice(0, -2));
+    },
+    rank: function(thumb$) {
+      return Number(thumb$.dataset.rank);
+    }
+  };
+
+  LongList.prototype._selectPageDownThumb = function() {
+    var th, thBottomY, thTopY, thumb$, viewPortBottomY;
+    viewPortBottomY = this.viewPort$.scrollTop + this.viewPort$.clientHeight;
+    thumb$ = this._getSelectedThumb$();
+    th = thumb$;
+    thTopY = this._coordonate.top(th);
+    thBottomY = thTopY + this.thumbHeight;
+    while (thBottomY <= viewPortBottomY) {
+      th = this._selectThumbDown();
+      if (th === null) {
+        return;
+      }
+      thTopY = this._coordonate.top(th);
+      thBottomY = thTopY + this.thumbHeight;
+    }
+    return th.scrollIntoView(true);
+  };
+
+  LongList.prototype._selectPageUpThumb = function() {
+    var th, thTopY, thumb$, viewPortTopY;
+    viewPortTopY = this.viewPort$.scrollTop;
+    thumb$ = this._getSelectedThumb$();
+    th = thumb$;
+    thTopY = this._coordonate.top(th);
+    while (thTopY >= viewPortTopY) {
+      th = this._selectThumbUp();
+      if (th === null) {
+        return;
+      }
+      thTopY = this._coordonate.top(th);
+    }
+    return th.scrollIntoView(false);
+  };
+
+  LongList.prototype._moveViewportToBottomOfThumb$ = function(thumb$) {
+    var thumb$Bottom, thumb$Top, viewPortBottomY;
+    thumb$Top = this._coordonate.top(thumb$);
+    thumb$Bottom = thumb$Top + this.thumbHeight;
+    viewPortBottomY = this.viewPort$.scrollTop + this.viewPort$.clientHeight;
+    if (viewPortBottomY < thumb$Bottom) {
+      thumb$.scrollIntoView(false);
+      return this._scrollHandler();
+    }
+  };
+
+  LongList.prototype._moveViewportToTopOfThumb$ = function(thumb$) {
+    var thumb$Top, viewPortTop;
+    thumb$Top = this._coordonate.top(thumb$);
+    viewPortTop = this.viewPort$.scrollTop;
+    if (thumb$Top < viewPortTop) {
+      thumb$.scrollIntoView(true);
+      return this._scrollHandler();
+    }
+  };
+
+  /**
+   * @param  {[type]} thumb$ # the element corresponding to the thumb
+   * @return {null}        # return null if on first thumb
+   * @return {Element}     # the previous element thumb
+  */
+
+
+  LongList.prototype._getPreviousThumb$ = function(thumbEl) {
+    var th;
+    if (thumbEl.dataset.rank === '0') {
+      return null;
+    }
+    th = thumbEl.previousElementSibling;
+    if (th === null) {
+      th = thumbEl.parentNode.lastElementChild;
+      if (th === thumbEl) {
+        return null;
+      }
+    }
+    while (th.nodeName === 'DIV') {
+      th = th.previousElementSibling;
+      if (th === null) {
+        th = thumbEl.parentNode.lastElementChild;
+        if (th === thumbEl) {
+          return null;
+        }
+      }
+    }
+    return th;
+  };
+
+  LongList.prototype._getNextThumb$ = function(thumb$) {
+    var th;
+    if (this._coordonate.rank(thumb$) === this.nPhotos - 1) {
+      return null;
+    }
+    th = thumb$.nextElementSibling;
+    if (th === null) {
+      th = thumb$.parentNode.firstElementChild;
+      if (th === thumb$) {
+        return null;
+      }
+    }
+    while (th.nodeName === 'DIV') {
+      th = th.nextElementSibling;
+      if (th === null) {
+        th = thumb$.parentNode.firstElementChild;
+        if (th === thumb$) {
+          return null;
+        }
+      }
+    }
+    return th;
   };
 
   return LongList;
@@ -6538,7 +6949,7 @@ module.exports = ObjectPickerImage = (function() {
   };
 
   ObjectPickerImage.prototype.getObject = function() {
-    return "files/screens/" + (this.longList.getSelectedID()) + ".jpg";
+    return "files/photo/screens/" + (this.longList.getSelectedID()) + ".jpg";
   };
 
   ObjectPickerImage.prototype.setFocusIfExpected = function() {
@@ -6546,7 +6957,19 @@ module.exports = ObjectPickerImage = (function() {
   };
 
   ObjectPickerImage.prototype.keyHandler = function(e) {
-    return this.longList.keyHandler(e);
+    console.log('ObjectPickerImage.keyHandler', e.which);
+    switch (e.which) {
+      case 27:
+        e.stopPropagation();
+        this.objectPicker.onNo();
+        break;
+      case 13:
+        e.stopPropagation();
+        this.objectPicker.onYes();
+        break;
+      default:
+        return this.longList.keyHandler(e);
+    }
   };
 
   ObjectPickerImage.prototype._createTab = function() {
