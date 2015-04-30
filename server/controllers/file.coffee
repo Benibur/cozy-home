@@ -72,9 +72,41 @@ module.exports.photoMonthDistribution = (req, res, next) ->
 ###
 module.exports.photoThumb = (req, res, next) ->
     which = if req.file.binary.thumb then 'thumb' else 'file'
+
     stream = req.file.getBinary which, (err) ->
-        return next err if err
+        if err
+            console.log err
+            next(err)
+            stream.on 'data', () ->
+            stream.on 'end', () ->
+            stream.resume()
+            return
+
+    req.on 'close', () ->
+        console.log "reQ.on close"
+        stream.abort()
+
+    res.on 'close', () ->
+        console.log "reS.on close"
+        stream.abort()
+
+
     stream.pipe res
+
+
+###*
+ * Returns thumb for given file.
+###
+module.exports.photoThumbFast = (req, res, next) ->
+
+    stream = new File(id:req.param.id).getBinary 'thumb', (err) ->
+        return next err if err
+
+    req.on 'close', () ->
+        stream.abort()
+
+    stream.pipe res
+
 
 ###*
  * Returns screen for given file.

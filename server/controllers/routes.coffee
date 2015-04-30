@@ -74,6 +74,8 @@ module.exports =
         get: file.photoRange
     'files/photo/thumbs/:fileid':
         get: file.photoThumb
+    'files/photo/thumbs/fast/:file_id':
+        get: file.photoThumbFast
     'files/photo/screens/:fileid':
         get: file.photoScreen
     'files/photo/monthdistribution':

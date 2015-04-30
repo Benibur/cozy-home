@@ -2867,27 +2867,15 @@ return buf.join("");
 };
 });
 
-require.register("templates/object-picker-image", function(exports, require, module) {
-module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
-attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
-var buf = [];
-with (locals || {}) {
-var interp;
-buf.push('<section></section>');
-}
-return buf.join("");
-};
-});
-
 require.register("templates/object-picker-photoURL", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
 var interp;
-buf.push('<section><div class="bloc-container"><div class="img-container"><div class="url-preview"></div></div><input');
+buf.push('<div class="bloc-container"><div class="img-container"><div class="url-preview"></div></div><input');
 buf.push(attrs({ 'placeholder':("" + (t('url of an image')) + ""), 'value':(""), "class": ('modal-url-input') }, {"placeholder":true,"value":true}));
-buf.push('/></div></section>');
+buf.push('/></div>');
 }
 return buf.join("");
 };
@@ -4604,12 +4592,14 @@ module.exports = InstallWizardView = (function(_super) {
 });
 
 ;require.register("views/long-list-images", function(exports, require, module) {
-var CELL_PADDING, COEF_SECURITY, LongList, MONTH_HEADER_HEIGHT, Photo, THROTTLE,
+var CELL_PADDING, COEF_SECURITY, LongList, MAX_SPEED, MONTH_HEADER_HEIGHT, Photo, THROTTLE,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 Photo = require('../models/photo');
 
-THROTTLE = 2350;
+THROTTLE = 350;
+
+MAX_SPEED = 2.5 * THROTTLE / 1000;
 
 COEF_SECURITY = 1.5;
 
@@ -4626,10 +4616,7 @@ module.exports = LongList = (function() {
     this.getSelectedID = __bind(this.getSelectedID, this);
     this.init = __bind(this.init, this);
     this.state = {
-      selected: {},
-      selected_n: 0,
-      skip: 0,
-      percent: 0
+      selected: {}
     };
     this.thumbs$ = document.createElement('div');
     this.viewPort$.appendChild(this.thumbs$);
@@ -4762,7 +4749,7 @@ module.exports = LongList = (function() {
 
 
   LongList.prototype._DOM_controlerInit = function() {
-    var buffer, cellPadding, colWidth, marginLeft, monthHeaderHeight, monthTopPadding, months, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, rowHeight, safeZone, thumbDim, thumbHeight, thumbWidth, viewPortDim, _SZ_bottomCase, _SZ_initEndPoint, _SZ_initStartPoint, _SZ_setMarginAtStart, _adaptBuffer, _computeSafeZone, _createThumbsBottom, _getBufferNextFirst, _getBufferNextLast, _insertMonthLabel, _moveBufferToBottom, _moveBufferToTop, _resizeHandler, _scrollHandler, _updateThumb,
+    var buffer, cellPadding, colWidth, counter_speed_avoided, counter_speed_ok, lastOnScroll_Y, marginLeft, monthHeaderHeight, monthTopPadding, months, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, rowHeight, safeZone, thumbDim, thumbHeight, thumbWidth, viewPortHeight, _SZ_bottomCase, _SZ_initEndPoint, _SZ_initStartPoint, _SZ_setMarginAtStart, _adaptBuffer, _computeSafeZone, _createThumbsBottom, _getBufferNextFirst, _getBufferNextLast, _insertMonthLabel, _moveBufferToBottom, _moveBufferToTop, _resizeHandler, _scrollHandler, _updateThumb,
       _this = this;
     months = this.months;
     buffer = this.buffer;
@@ -4777,7 +4764,8 @@ module.exports = LongList = (function() {
     nThumbsPerRow = null;
     nRowsInSafeZoneMargin = null;
     nThumbsInSafeZone = null;
-    viewPortDim = null;
+    viewPortHeight = null;
+    lastOnScroll_Y = null;
     safeZone = {
       firstRk: null,
       firstMonthRk: null,
@@ -4794,6 +4782,7 @@ module.exports = LongList = (function() {
     };
     _scrollHandler = function(e) {
       if (_this.noScrollScheduled) {
+        lastOnScroll_Y = _this.viewPort$.scrollTop;
         setTimeout(_adaptBuffer, THROTTLE);
         return _this.noScrollScheduled = false;
       }
@@ -4802,6 +4791,7 @@ module.exports = LongList = (function() {
     _resizeHandler = function() {
       var month, nPhotos, nPhotosInMonth, nRowsInViewPort, nThumbsInSafeZoneMargin, nThumbsInViewPort, nextY, width, _i, _len, _ref;
       width = _this.viewPort$.clientWidth;
+      viewPortHeight = _this.viewPort$.clientWidth;
       nThumbsPerRow = Math.floor((width - cellPadding) / colWidth);
       marginLeft = cellPadding + Math.round((width - nThumbsPerRow * colWidth - cellPadding) / 2);
       nRowsInViewPort = Math.ceil(_this.viewPort$.clientHeight / rowHeight);
@@ -4834,9 +4824,25 @@ module.exports = LongList = (function() {
      * Steps :
     */
 
+    counter_speed_avoided = 0;
+    counter_speed_ok = 0;
     _adaptBuffer = function() {
-      var bufr, nAvailable, nToCreate, nToFind, nToMove, previous_firstThumbRkToUpdate, previous_firstThumbToUpdate, targetCol, targetMonthRk, targetRk, targetY, _ref, _ref1;
+      var bufr, nAvailable, nToCreate, nToFind, nToMove, previous_firstThumbRkToUpdate, previous_firstThumbToUpdate, speed, targetCol, targetMonthRk, targetRk, targetY, _ref, _ref1;
       _this.noScrollScheduled = true;
+      speed = Math.abs(_this.viewPort$.scrollTop - lastOnScroll_Y) / viewPortHeight;
+      if (speed > MAX_SPEED) {
+        counter_speed_avoided += 1;
+        console.log('too fasts!');
+        console.log('speed ok nb:', counter_speed_ok);
+        console.log('speed nok nb:', counter_speed_avoided);
+        _scrollHandler();
+        return;
+      } else {
+        counter_speed_ok += 1;
+        console.log('speed ok, update buffer');
+        console.log('speed ok nb:', counter_speed_ok);
+        console.log('speed nok nb:', counter_speed_avoided);
+      }
       bufr = buffer;
       safeZone.firstRk = null;
       safeZone.firstMonthRk = null;
@@ -5282,6 +5288,7 @@ module.exports = LongList = (function() {
         thumb$.dataset.rank = rk;
         thumb.rank = rk;
         thumb$.src = '';
+        thumb$.dataset.id = '';
         style = thumb$.style;
         style.top = rowY + 'px';
         style.left = (marginLeft + col * colWidth) + 'px';
@@ -5330,6 +5337,7 @@ module.exports = LongList = (function() {
         thumb$.dataset.rank = rk;
         thumb.rank = rk;
         thumb$.src = '';
+        thumb$.dataset.id = '';
         style = thumb$.style;
         style.top = rowY + 'px';
         style.left = (marginLeft + col * colWidth) + 'px';
@@ -5391,31 +5399,41 @@ module.exports = LongList = (function() {
   };
 
   LongList.prototype._clickHandler = function(e) {
-    var thBottomY, thTopY, thumb$, viewPortBottomY, viewPortTopY;
-    thumb$ = e.target;
-    if (thumb$.src === '') {
-      return;
+    var th, thBottomY, thTopY, viewPortBottomY, viewPortTopY;
+    th = e.target;
+    this._lastSelectedCol = this._coordonate.left(th);
+    if (!this._toggleOnThumb$(th)) {
+      return null;
     }
-    this._lastSelectedCol = this._coordonate.left(thumb$);
-    this._toggleOnThumb$(thumb$);
     viewPortTopY = this.viewPort$.scrollTop;
     viewPortBottomY = viewPortTopY + this.viewPort$.clientHeight;
-    thTopY = this._coordonate.top(thumb$);
+    thTopY = this._coordonate.top(th);
     thBottomY = thTopY + this.thumbHeight;
     if (viewPortBottomY < thBottomY) {
-      thumb$.scrollIntoView(false);
+      th.scrollIntoView(false);
     }
     if (thTopY < viewPortTopY) {
-      return thumb$.scrollIntoView(true);
+      return th.scrollIntoView(true);
     }
   };
 
+  /**
+   * toogles on a thumb.
+   * Returns null if the thumb is already selected or if there is no image id
+   * associated yet
+  */
+
+
   LongList.prototype._toggleOnThumb$ = function(thumb$) {
-    if (!this.state.selected[thumb$.dataset.id]) {
-      this._unselectAll();
-      thumb$.classList.add('selectedThumb');
-      return this.state.selected[thumb$.dataset.id] = thumb$;
+    if (thumb$.dataset.id === '') {
+      return null;
     }
+    if (this.state.selected[thumb$.dataset.id]) {
+      return null;
+    }
+    this._unselectAll();
+    thumb$.classList.add('selectedThumb');
+    return this.state.selected[thumb$.dataset.id] = thumb$;
   };
 
   LongList.prototype._unselectAll = function() {
@@ -5457,10 +5475,12 @@ module.exports = LongList = (function() {
     }
     nextThumb$ = this._getNextThumb$(thumb$);
     if (nextThumb$ === null) {
-      return;
+      return null;
     }
     this._lastSelectedCol = this._coordonate.left(nextThumb$);
-    this._toggleOnThumb$(nextThumb$);
+    if (!this._toggleOnThumb$(nextThumb$)) {
+      return null;
+    }
     return this._moveViewportToBottomOfThumb$(nextThumb$);
   };
 
@@ -5469,10 +5489,12 @@ module.exports = LongList = (function() {
     thumb$ = this._getSelectedThumb$();
     prevThumb$ = this._getPreviousThumb$(thumb$);
     if (prevThumb$ === null) {
-      return;
+      return null;
     }
     this._lastSelectedCol = this._coordonate.left(prevThumb$);
-    this._toggleOnThumb$(prevThumb$);
+    if (!this._toggleOnThumb$(prevThumb$)) {
+      return null;
+    }
     return this._moveViewportToTopOfThumb$(prevThumb$);
   };
 
@@ -5492,23 +5514,35 @@ module.exports = LongList = (function() {
     }
     top = thumb$.style.top;
     th = this._getPreviousThumb$(thumb$);
+    if (th === null) {
+      return null;
+    }
     while (th.style.left !== left) {
       if (th.dataset.rank === '0') {
         this._lastSelectedCol = this._coordonate.left(th);
-        this._toggleOnThumb$(th);
+        if (!this._toggleOnThumb$(th)) {
+          return null;
+        }
         this._moveViewportToTopOfThumb$(th);
         return th;
       }
       if (th.style.top !== top) {
         if (this._coordonate.left(th) <= left) {
-          this._toggleOnThumb$(th);
+          if (!this._toggleOnThumb$(th)) {
+            return null;
+          }
           this._moveViewportToTopOfThumb$(th);
           return th;
         }
       }
       th = this._getPreviousThumb$(th);
+      if (th === null) {
+        return null;
+      }
     }
-    this._toggleOnThumb$(th);
+    if (!this._toggleOnThumb$(th)) {
+      return null;
+    }
     this._moveViewportToTopOfThumb$(th);
     return th;
   };
@@ -5529,32 +5563,49 @@ module.exports = LongList = (function() {
     }
     top = thumb$.style.top;
     th = this._getNextThumb$(thumb$);
+    if (th === null) {
+      return null;
+    }
     hasAlreadyChangedOfRow = false;
     while (this._coordonate.left(th) !== left) {
       if (this._coordonate.rank(th) === this.nPhotos - 1) {
         this._lastSelectedCol = this._coordonate.left(th);
-        this._toggleOnThumb$(th);
+        if (!this._toggleOnThumb$(th)) {
+          return null;
+        }
         this._moveViewportToBottomOfThumb$(th);
         return th;
       }
       if (th.style.top !== top) {
         if (hasAlreadyChangedOfRow) {
           th = this._getPreviousThumb$(th);
-          this._toggleOnThumb$(th);
+          if (th === null) {
+            return null;
+          }
+          if (!this._toggleOnThumb$(th)) {
+            return null;
+          }
           this._moveViewportToBottomOfThumb$(th);
           return th;
         }
         hasAlreadyChangedOfRow = true;
         top = th.style.top;
         if (this._coordonate.left(th) >= left) {
-          this._toggleOnThumb$(th);
+          if (!this._toggleOnThumb$(th)) {
+            return null;
+          }
           this._moveViewportToBottomOfThumb$(th);
           return th;
         }
       }
       th = this._getNextThumb$(th);
+      if (th === null) {
+        return null;
+      }
     }
-    this._toggleOnThumb$(th);
+    if (!this._toggleOnThumb$(th)) {
+      return null;
+    }
     this._moveViewportToBottomOfThumb$(th);
     return th;
   };
@@ -5575,18 +5626,31 @@ module.exports = LongList = (function() {
     }
     top = thumb$.style.top;
     th = this._getNextThumb$(thumb$);
+    if (th === null) {
+      return null;
+    }
     while (th.style.top === top) {
       if (this._coordonate.rank(th) === this.nPhotos - 1) {
         this._lastSelectedCol = this._coordonate.left(th);
-        this._toggleOnThumb$(th);
+        if (!this._toggleOnThumb$(th)) {
+          return null;
+        }
         this._moveViewportToBottomOfThumb$(th);
         return;
       }
       th = this._getNextThumb$(th);
+      if (th === null) {
+        return null;
+      }
     }
     th = this._getPreviousThumb$(th);
+    if (th === null) {
+      return null;
+    }
     this._lastSelectedCol = this._coordonate.left(th);
-    this._toggleOnThumb$(th);
+    if (!this._toggleOnThumb$(th)) {
+      return null;
+    }
     this._moveViewportToBottomOfThumb$(th);
   };
 
@@ -5606,18 +5670,28 @@ module.exports = LongList = (function() {
     }
     top = thumb$.style.top;
     th = this._getPreviousThumb$(thumb$);
+    if (th === null) {
+      return null;
+    }
     while (th.style.top === top) {
       if (this._coordonate.rank(th) === 0) {
         this._lastSelectedCol = this._coordonate.left(th);
-        this._toggleOnThumb$(th);
+        if (!this._toggleOnThumb$(th)) {
+          return null;
+        }
         this._moveViewportToBottomOfThumb$(th);
         return;
       }
       th = this._getPreviousThumb$(th);
     }
     th = this._getNextThumb$(th);
+    if (th === null) {
+      return null;
+    }
     this._lastSelectedCol = this._coordonate.left(th);
-    this._toggleOnThumb$(th);
+    if (!this._toggleOnThumb$(th)) {
+      return null;
+    }
     this._moveViewportToBottomOfThumb$(th);
   };
 
@@ -5637,6 +5711,9 @@ module.exports = LongList = (function() {
     var th, thBottomY, thTopY, thumb$, viewPortBottomY;
     viewPortBottomY = this.viewPort$.scrollTop + this.viewPort$.clientHeight;
     thumb$ = this._getSelectedThumb$();
+    if (thumb$ === null) {
+      return;
+    }
     th = thumb$;
     thTopY = this._coordonate.top(th);
     thBottomY = thTopY + this.thumbHeight;
@@ -5689,15 +5766,19 @@ module.exports = LongList = (function() {
   };
 
   /**
-   * @param  {[type]} thumb$ # the element corresponding to the thumb
+   * @param  {Element} thumb$ # the element corresponding to the thumb
    * @return {null}        # return null if on first thumb
-   * @return {Element}     # the previous element thumb
+   * @return {Element}     # the previous element thumb or null if on first
+   *                         thumb of first of the buffer
   */
 
 
   LongList.prototype._getPreviousThumb$ = function(thumbEl) {
     var th;
     if (thumbEl.dataset.rank === '0') {
+      return null;
+    }
+    if (th === this.buffer.first.el) {
       return null;
     }
     th = thumbEl.previousElementSibling;
@@ -5719,9 +5800,20 @@ module.exports = LongList = (function() {
     return th;
   };
 
+  /**
+   *
+   * @param  {Element} thumb$ [description]
+   * @return {Element|null}   # returns an element or null if on the last
+   *                            thumb or the last of the buffer
+  */
+
+
   LongList.prototype._getNextThumb$ = function(thumb$) {
     var th;
     if (this._coordonate.rank(thumb$) === this.nPhotos - 1) {
+      return null;
+    }
+    if (th === this.buffer.last.el) {
       return null;
     }
     th = thumb$.nextElementSibling;
@@ -6918,33 +7010,33 @@ module.exports = NotificationsView = (function(_super) {
 });
 
 ;require.register("views/object-picker-image", function(exports, require, module) {
-var LongList, ObjectPickerImage, Photo, template;
-
-template = require('../templates/object-picker-image');
+var BaseView, LongList, ObjectPickerImage, Photo, _ref,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 Photo = require('../models/photo');
 
 LongList = require('views/long-list-images');
 
-module.exports = ObjectPickerImage = (function() {
-  function ObjectPickerImage(objectPicker, config) {
-    this.objectPicker = objectPicker;
-    this.config = config;
-    this.state = {
-      selected: {},
-      selected_n: 0,
-      skip: 0,
-      percent: 0
-    };
-    this.name = 'thumbPicker';
-    this.tabLabel = 'image';
-    this.tab = this._createTab();
-    this.panel = $(template())[0];
-    this.panel.addEventListener('dblclick', this._validateDblClick);
-    this.longList = new LongList(this.panel);
+BaseView = require('lib/base_view');
+
+module.exports = ObjectPickerImage = (function(_super) {
+  __extends(ObjectPickerImage, _super);
+
+  function ObjectPickerImage() {
+    _ref = ObjectPickerImage.__super__.constructor.apply(this, arguments);
+    return _ref;
   }
 
-  ObjectPickerImage.prototype.init = function() {
+  ObjectPickerImage.prototype.tagName = "section";
+
+  ObjectPickerImage.prototype.initialize = function() {
+    this.name = 'thumbPicker';
+    this.tabLabel = 'image';
+    this.tab = $("<div>" + this.tabLabel + "</div>")[0];
+    this.panel = this.el;
+    this.panel.addEventListener('dblclick', this._validateDblClick);
+    this.longList = new LongList(this.panel);
     return this.longList.init();
   };
 
@@ -6958,52 +7050,47 @@ module.exports = ObjectPickerImage = (function() {
 
   ObjectPickerImage.prototype.keyHandler = function(e) {
     console.log('ObjectPickerImage.keyHandler', e.which);
-    switch (e.which) {
-      case 27:
-        e.stopPropagation();
-        this.objectPicker.onNo();
-        break;
-      case 13:
-        e.stopPropagation();
-        this.objectPicker.onYes();
-        break;
-      default:
-        return this.longList.keyHandler(e);
-    }
-  };
-
-  ObjectPickerImage.prototype._createTab = function() {
-    var tab$;
-    tab$ = document.createElement('div');
-    tab$.textContent = this.tabLabel;
-    return tab$;
+    this.longList.keyHandler(e);
   };
 
   return ObjectPickerImage;
 
-})();
+})(BaseView);
 });
 
 ;require.register("views/object-picker-photoURL", function(exports, require, module) {
-var ObjectPickerPhotoURL, proxyclient, template;
-
-template = require('../templates/object-picker-photoURL');
+var BaseView, ObjectPickerPhotoURL, proxyclient, _ref,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 proxyclient = require('lib/proxyclient');
 
-module.exports = ObjectPickerPhotoURL = (function() {
-  function ObjectPickerPhotoURL(objectPicker) {
-    this.objectPicker = objectPicker;
+BaseView = require('lib/base_view');
+
+module.exports = ObjectPickerPhotoURL = (function(_super) {
+  __extends(ObjectPickerPhotoURL, _super);
+
+  function ObjectPickerPhotoURL() {
+    _ref = ObjectPickerPhotoURL.__super__.constructor.apply(this, arguments);
+    return _ref;
+  }
+
+  ObjectPickerPhotoURL.prototype.template = require('../templates/object-picker-photoURL');
+
+  ObjectPickerPhotoURL.prototype.tagName = 'section';
+
+  ObjectPickerPhotoURL.prototype.initialize = function() {
+    this.render();
     this.name = 'urlPhotoUpload';
     this.tabLabel = 'url';
-    this.tab = this._createTab();
-    this.panel = $(template())[0];
+    this.tab = $("<div>" + this.tabLabel + "</div>")[0];
+    this.panel = this.el;
     this.img = this.panel.querySelector('.url-preview');
     this.blocContainer = this.panel.querySelector('.bloc-container');
     this.url = void 0;
     this.input = this.panel.querySelector('.modal-url-input');
-    this._setupInput();
-  }
+    return this._setupInput();
+  };
 
   ObjectPickerPhotoURL.prototype.getObject = function() {
     if (this.url) {
@@ -7020,20 +7107,13 @@ module.exports = ObjectPickerPhotoURL = (function() {
   };
 
   ObjectPickerPhotoURL.prototype.keyHandler = function(e) {
-    switch (e.which) {
-      case 27:
-        e.stopPropagation();
-        this.objectPicker.onNo();
-        break;
-      case 13:
-        e.stopPropagation();
-        this.objectPicker.onYes();
-        break;
-      default:
-        return false;
-    }
     return false;
   };
+
+  /**
+   * manages the url typed in the input and update image
+  */
+
 
   ObjectPickerPhotoURL.prototype._setupInput = function() {
     var img, imgTmp, preloadImage, urlRegexp,
@@ -7069,16 +7149,9 @@ module.exports = ObjectPickerPhotoURL = (function() {
     }, false);
   };
 
-  ObjectPickerPhotoURL.prototype._createTab = function() {
-    var tab;
-    tab = document.createElement('div');
-    tab.textContent = this.tabLabel;
-    return tab;
-  };
-
   return ObjectPickerPhotoURL;
 
-})();
+})(BaseView);
 });
 
 ;require.register("views/object-picker-upload", function(exports, require, module) {
@@ -7267,10 +7340,10 @@ module.exports = PhotoPickerCroper = (function(_super) {
     this.imgToCrop = this.cropper$.querySelector('#img-to-crop');
     this.imgPreview = this.cropper$.querySelector('#img-preview');
     this.panelsControlers = {};
-    this.imagePanel = new ObjectPickerImage(this, this.config);
+    this.imagePanel = new ObjectPickerImage();
     tabControler.addTab(this.objectPickerCont, this.tablist, this.imagePanel);
     this.panelsControlers[this.imagePanel.name] = this.imagePanel;
-    this.photoURLpanel = new ObjectPickerPhotoURL(this);
+    this.photoURLpanel = new ObjectPickerPhotoURL();
     tabControler.addTab(this.objectPickerCont, this.tablist, this.photoURLpanel);
     this.panelsControlers[this.photoURLpanel.name] = this.photoURLpanel;
     this.uploadPanel = new ObjectPickerUpload(this);
@@ -7279,7 +7352,6 @@ module.exports = PhotoPickerCroper = (function(_super) {
     tabControler.initializeTabs(body);
     this._listenTabsSelection();
     this._selectDefaultTab(this.imagePanel.name);
-    this.imagePanel.init();
     this.imgToCrop.addEventListener('load', this._onImgToCropLoaded, false);
     this.cropper$.style.display = 'none';
     return true;

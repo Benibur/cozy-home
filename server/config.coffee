@@ -10,6 +10,14 @@ catch e
 
 config =
     common: [
+        (req, resp, next) ->
+            sockets = require('http').globalAgent.sockets
+            for origin, s of sockets
+                console.log origin, s?.length
+                for t in s
+                    console.log t?._httpMessage?.path
+            next()
+
         americano.bodyParser()
         americano.methodOverride()
         americano.errorHandler

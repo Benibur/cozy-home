@@ -1,16 +1,21 @@
-template    = require '../templates/object-picker-photoURL'
 proxyclient = require 'lib/proxyclient'
+BaseView    = require 'lib/base_view'
 
 
-module.exports = class ObjectPickerPhotoURL
+module.exports = class ObjectPickerPhotoURL extends BaseView
 
+    template : require '../templates/object-picker-photoURL'
+    tagName  : 'section'
 
-    constructor: (objectPicker) ->
-        @objectPicker = objectPicker
+####################
+## PUBLIC SECTION ##
+#
+    initialize: () ->
+        @render()
         @name     = 'urlPhotoUpload'
         @tabLabel = 'url'
-        @tab      = @_createTab()
-        @panel    = $(template())[0]
+        @tab      = $("<div>#{@tabLabel}</div>")[0]
+        @panel    = @el
         @img      = @panel.querySelector('.url-preview')
         @blocContainer=@panel.querySelector('.bloc-container')
         @url      = undefined
@@ -31,19 +36,15 @@ module.exports = class ObjectPickerPhotoURL
 
 
     keyHandler : (e)->
-        switch e.which
-            when 27 # escape key
-                e.stopPropagation()
-                @objectPicker.onNo()
-            when 13 # return key
-                e.stopPropagation()
-                @objectPicker.onYes()
-            else
-                return false
         return false
 
 
-    # manages the url typed in the input and update image
+#####################
+## PRIVATE SECTION ##
+#
+    ###*
+     * manages the url typed in the input and update image
+    ###
     _setupInput: ()->
         img = @img
         urlRegexp = /\b(https?|ftp|file):\/\/[\-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i
@@ -73,10 +74,3 @@ module.exports = class ObjectPickerPhotoURL
                 img.style.backgroundImage = ""
                 @url = undefined
         ,false)
-
-
-    _createTab : () ->
-        tab = document.createElement('div')
-        tab.textContent  = @tabLabel
-        return tab
-

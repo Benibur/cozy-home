@@ -55,11 +55,11 @@ module.exports = class PhotoPickerCroper extends Modal
         # initialise tabs and panels
         @panelsControlers = {} # {tab1.name : tab1Controler, tab2... }
         # image panel
-        @imagePanel = new ObjectPickerImage(this, @config)
+        @imagePanel = new ObjectPickerImage()
         tabControler.addTab @objectPickerCont, @tablist, @imagePanel
         @panelsControlers[@imagePanel.name] = @imagePanel
         # photoURL panel
-        @photoURLpanel = new ObjectPickerPhotoURL(this)
+        @photoURLpanel = new ObjectPickerPhotoURL()
         tabControler.addTab @objectPickerCont, @tablist, @photoURLpanel
         @panelsControlers[@photoURLpanel.name] = @photoURLpanel
         # upload panel
@@ -70,7 +70,7 @@ module.exports = class PhotoPickerCroper extends Modal
         tabControler.initializeTabs(body)
         @_listenTabsSelection()
         @_selectDefaultTab(@imagePanel.name)
-        @imagePanel.init()
+        # @imagePanel.init()
         ####
         # init the cropper
         @imgToCrop.addEventListener('load', @_onImgToCropLoaded, false)

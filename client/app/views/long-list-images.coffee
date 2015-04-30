@@ -101,7 +101,8 @@ Photo    = require '../models/photo'
 ## CONSTANTS ##
 #
 # minimum duration between two refresh (_adaptBuffer)
-THROTTLE            = 2350
+THROTTLE            = 350
+MAX_SPEED           = 2.5 * THROTTLE / 1000  # n = max number of viewport height by seconds
 # number of "screens" before and after the viewport
 # (ex : 1.5 => 1+2*1.5=4 screens always ready)
 COEF_SECURITY       = 1.5
@@ -109,6 +110,7 @@ COEF_SECURITY       = 1.5
 MONTH_HEADER_HEIGHT = 40
 # padding in pixels between thumbs
 CELL_PADDING        = 4
+
 
 
 
@@ -122,9 +124,7 @@ module.exports = class LongList
         # init state
         @state =
             selected    : {} # selected.photoID = thumb = {rank, id,name,thumbEl}
-            selected_n  : 0  # number of photos selected
-            skip        : 0  # rank of the oldest downloaded thumb
-            percent     : 0  # % of thumbnails computation avancement (if any)
+            # todo BJA supprimer le @state
         ####
         # get elements (name ends with '$')
         @thumbs$  = document.createElement('div')
@@ -276,7 +276,8 @@ module.exports = class LongList
         nThumbsPerRow         = null
         nRowsInSafeZoneMargin = null
         nThumbsInSafeZone     = null
-        viewPortDim           = null
+        viewPortHeight        = null
+        lastOnScroll_Y        = null
         safeZone =
             firstRk              : null
             firstMonthRk         : null
@@ -294,6 +295,7 @@ module.exports = class LongList
 
         _scrollHandler = (e) =>
             if @noScrollScheduled
+                lastOnScroll_Y = @viewPort$.scrollTop
                 setTimeout(_adaptBuffer,THROTTLE)
                 @noScrollScheduled = false
 
@@ -302,6 +304,7 @@ module.exports = class LongList
 
         _resizeHandler= ()=>
             width = @viewPort$.clientWidth
+            viewPortHeight = @viewPort$.clientWidth
             nThumbsPerRow = Math.floor((width-cellPadding)/colWidth)
             marginLeft = cellPadding + Math.round((
                 width - nThumbsPerRow * colWidth - cellPadding)/2)
@@ -336,9 +339,27 @@ module.exports = class LongList
          * Launched at init and by _scrollHandler
          * Steps :
         ###
+        counter_speed_avoided = 0
+        counter_speed_ok      = 0
+
         _adaptBuffer = () =>
             @noScrollScheduled = true
-            bufr               = buffer
+            # test speed
+            speed = Math.abs(@viewPort$.scrollTop - lastOnScroll_Y) / viewPortHeight
+            if speed > MAX_SPEED
+                counter_speed_avoided += 1
+                console.log 'too fasts!'
+                console.log 'speed ok nb:', counter_speed_ok
+                console.log 'speed nok nb:', counter_speed_avoided
+                _scrollHandler()
+                return
+            else
+                counter_speed_ok += 1
+                console.log 'speed ok, update buffer'
+                console.log 'speed ok nb:', counter_speed_ok
+                console.log 'speed nok nb:', counter_speed_avoided
+
+            bufr = buffer
             # re init safeZone but keep a reference on the
             # previous firstThumbToUpdate and firstThumbRkToUpdate
             safeZone.firstRk              = null
@@ -849,6 +870,7 @@ module.exports = class LongList
                 thumb$.dataset.rank = rk
                 thumb.rank          = rk
                 thumb$.src          = ''
+                thumb$.dataset.id   = ''
                 style      = thumb$.style
                 style.top  = rowY + 'px'
                 style.left = (marginLeft + col*colWidth) + 'px'
@@ -902,6 +924,7 @@ module.exports = class LongList
                 thumb$.dataset.rank = rk
                 thumb.rank          = rk
                 thumb$.src          = ''
+                thumb$.dataset.id   = ''
                 style               = thumb$.style
                 style.top           = rowY + 'px'
                 style.left          = (marginLeft + col*colWidth) + 'px'
@@ -975,27 +998,35 @@ module.exports = class LongList
 
 
     _clickHandler: (e) =>
-        thumb$ = e.target
-        if thumb$.src == ''
-            return # the thumb is empty (no image yet)=> we can't select it
-        @_lastSelectedCol = @_coordonate.left(thumb$)
-        @_toggleOnThumb$(thumb$)
-
+        th = e.target
+        @_lastSelectedCol = @_coordonate.left(th)
+        if !@_toggleOnThumb$(th) then return null
         viewPortTopY    = @viewPort$.scrollTop
         viewPortBottomY = viewPortTopY + @viewPort$.clientHeight
-        thTopY    = @_coordonate.top(thumb$)
+        thTopY    = @_coordonate.top(th)
         thBottomY = thTopY + @thumbHeight
         if viewPortBottomY < thBottomY
-            thumb$.scrollIntoView(false)
+            th.scrollIntoView(false)
         if thTopY < viewPortTopY
-            thumb$.scrollIntoView(true)
+            th.scrollIntoView(true)
 
 
+    ###*
+     * toogles on a thumb.
+     * Returns null if the thumb is already selected or if there is no image id
+     * associated yet
+    ###
     _toggleOnThumb$: (thumb$)->
-        if !@state.selected[thumb$.dataset.id]
-            @_unselectAll()
-            thumb$.classList.add('selectedThumb')
-            @state.selected[thumb$.dataset.id] = thumb$
+        # the thumb is empty (no image yet)=> we can't select it
+        if thumb$.dataset.id == ''
+            return null
+        # the thums is already selected => we can't select it again
+        if @state.selected[thumb$.dataset.id]
+            return null
+        # otherwise we can toggle
+        @_unselectAll()
+        thumb$.classList.add('selectedThumb')
+        @state.selected[thumb$.dataset.id] = thumb$
 
 
     _unselectAll: () =>
@@ -1019,10 +1050,9 @@ module.exports = class LongList
                 break
         # 2/ get next thumb$ and toggle
         nextThumb$ = @_getNextThumb$(thumb$)
-        if nextThumb$ == null
-            return
+        if nextThumb$ == null then return null
         @_lastSelectedCol = @_coordonate.left(nextThumb$)
-        @_toggleOnThumb$(nextThumb$)
+        if !@_toggleOnThumb$(nextThumb$) then return null
         @_moveViewportToBottomOfThumb$(nextThumb$)
 
 
@@ -1031,10 +1061,9 @@ module.exports = class LongList
         thumb$ = @_getSelectedThumb$()
         # 2/ get previous thumb$ and toggle
         prevThumb$ = @_getPreviousThumb$(thumb$)
-        if prevThumb$ == null
-            return
+        if prevThumb$ == null then return null
         @_lastSelectedCol = @_coordonate.left(prevThumb$)
-        @_toggleOnThumb$(prevThumb$)
+        if !@_toggleOnThumb$(prevThumb$) then return null
         @_moveViewportToTopOfThumb$(prevThumb$)
 
 
@@ -1050,21 +1079,23 @@ module.exports = class LongList
             left = @_lastSelectedCol
         top  = thumb$.style.top
         th   = @_getPreviousThumb$(thumb$)
+        if th == null then return null
         while th.style.left != left
             if th.dataset.rank == '0'
                 @_lastSelectedCol = @_coordonate.left(th)
-                @_toggleOnThumb$(th)
+                if !@_toggleOnThumb$(th) then return null
                 @_moveViewportToTopOfThumb$(th)
                 return th
             if th.style.top != top
                 # we changed of row, continue only if there are thumbs on the
                 # right
                 if @_coordonate.left(th) <= left
-                    @_toggleOnThumb$(th)
+                    if !@_toggleOnThumb$(th) then return null
                     @_moveViewportToTopOfThumb$(th)
                     return th
             th = @_getPreviousThumb$(th)
-        @_toggleOnThumb$(th)
+            if th == null then return null
+        if !@_toggleOnThumb$(th) then return null
         @_moveViewportToTopOfThumb$(th)
         return th
 
@@ -1081,11 +1112,12 @@ module.exports = class LongList
             left = @_lastSelectedCol
         top  = thumb$.style.top
         th   = @_getNextThumb$(thumb$)
+        if th == null then return null
         hasAlreadyChangedOfRow = false
         while @_coordonate.left(th) != left
             if @_coordonate.rank(th) == @nPhotos - 1
                 @_lastSelectedCol = @_coordonate.left(th)
-                @_toggleOnThumb$(th)
+                if !@_toggleOnThumb$(th) then return null
                 @_moveViewportToBottomOfThumb$(th)
                 return th
             if th.style.top != top
@@ -1093,17 +1125,19 @@ module.exports = class LongList
                 # right
                 if hasAlreadyChangedOfRow
                     th = @_getPreviousThumb$(th)
-                    @_toggleOnThumb$(th)
+                    if th == null then return null
+                    if !@_toggleOnThumb$(th) then return null
                     @_moveViewportToBottomOfThumb$(th)
                     return th
                 hasAlreadyChangedOfRow = true
                 top = th.style.top
                 if @_coordonate.left(th) >= left
-                    @_toggleOnThumb$(th)
+                    if !@_toggleOnThumb$(th) then return null
                     @_moveViewportToBottomOfThumb$(th)
                     return th
             th = @_getNextThumb$(th)
-        @_toggleOnThumb$(th)
+            if th == null then return null
+        if !@_toggleOnThumb$(th) then return null
         @_moveViewportToBottomOfThumb$(th)
         return th
 
@@ -1120,16 +1154,19 @@ module.exports = class LongList
             left = @_lastSelectedCol
         top  = thumb$.style.top
         th   = @_getNextThumb$(thumb$)
+        if th == null then return null
         while th.style.top == top
             if @_coordonate.rank(th) == @nPhotos - 1
                 @_lastSelectedCol = @_coordonate.left(th)
-                @_toggleOnThumb$(th)
+                if !@_toggleOnThumb$(th) then return null
                 @_moveViewportToBottomOfThumb$(th)
                 return
             th = @_getNextThumb$(th)
+            if th == null then return null
         th = @_getPreviousThumb$(th)
+        if th == null then return null
         @_lastSelectedCol = @_coordonate.left(th)
-        @_toggleOnThumb$(th)
+        if !@_toggleOnThumb$(th) then return null
         @_moveViewportToBottomOfThumb$(th)
         return
 
@@ -1146,16 +1183,18 @@ module.exports = class LongList
             left = @_lastSelectedCol
         top = thumb$.style.top
         th  = @_getPreviousThumb$(thumb$)
+        if th == null then return null
         while th.style.top == top
             if @_coordonate.rank(th) == 0
                 @_lastSelectedCol = @_coordonate.left(th)
-                @_toggleOnThumb$(th)
+                if !@_toggleOnThumb$(th) then return null
                 @_moveViewportToBottomOfThumb$(th)
                 return
             th = @_getPreviousThumb$(th)
         th = @_getNextThumb$(th)
+        if th == null then return null
         @_lastSelectedCol = @_coordonate.left(th)
-        @_toggleOnThumb$(th)
+        if !@_toggleOnThumb$(th) then return null
         @_moveViewportToBottomOfThumb$(th)
         return
 
@@ -1172,13 +1211,13 @@ module.exports = class LongList
     _selectPageDownThumb: () ->
         viewPortBottomY = @viewPort$.scrollTop + @viewPort$.clientHeight
         thumb$    = @_getSelectedThumb$()
-        th = thumb$
+        if thumb$ == null then return
+        th        = thumb$
         thTopY    = @_coordonate.top(th)
         thBottomY = thTopY + @thumbHeight
         while thBottomY <= viewPortBottomY
             th = @_selectThumbDown()
-            if th == null
-                return
+            if th == null then return
             thTopY    = @_coordonate.top(th)
             thBottomY = thTopY + @thumbHeight
         th.scrollIntoView(true)
@@ -1215,15 +1254,19 @@ module.exports = class LongList
 
 
     ###*
-     * @param  {[type]} thumb$ # the element corresponding to the thumb
+     * @param  {Element} thumb$ # the element corresponding to the thumb
      * @return {null}        # return null if on first thumb
-     * @return {Element}     # the previous element thumb
+     * @return {Element}     # the previous element thumb or null if on first
+     *                         thumb of first of the buffer
     ###
     _getPreviousThumb$: (thumbEl) ->
         # 1/ check we are not on the first thumb
         if thumbEl.dataset.rank == '0'
             return null
-        # 2/ get the previous thumb
+        # 2/ check we are not on the first displayed by the buffer
+        if th == @buffer.first.el
+            return null
+        # 3/ get the previous thumb
         th = thumbEl.previousElementSibling
         if th == null
             # case if thumbEl is the first element => jump to the last one
@@ -1244,12 +1287,20 @@ module.exports = class LongList
                     return null
         return th
 
-
+    ###*
+     *
+     * @param  {Element} thumb$ [description]
+     * @return {Element|null}   # returns an element or null if on the last
+     *                            thumb or the last of the buffer
+    ###
     _getNextThumb$: (thumb$) ->
         # 1/ check we are not on the last thumb
         if @_coordonate.rank(thumb$) == @nPhotos - 1
             return null
-        # 2/ get the next thumb
+        # 2/ check we are not on the last displayed by the buffer
+        if th == @buffer.last.el
+            return null
+        # 3/ get the next thumb
         th = thumb$.nextElementSibling
         if th == null
             # case if thumb$ is the last element => jump to the first one
