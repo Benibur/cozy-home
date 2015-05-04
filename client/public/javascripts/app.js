@@ -2727,6 +2727,18 @@ return buf.join("");
 };
 });
 
+require.register("templates/long_list_image", function(exports, require, module) {
+module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
+var buf = [];
+with (locals || {}) {
+var interp;
+buf.push('<div class="viewPort"><div class="thumbs"></div></div><div class="index"></div>');
+}
+return buf.join("");
+};
+});
+
 require.register("templates/market", function(exports, require, module) {
 module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
 attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
@@ -2887,7 +2899,7 @@ attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow |
 var buf = [];
 with (locals || {}) {
 var interp;
-buf.push('<section><button class="modal-uploadBtn">' + escape((interp = t('ObjPicker upload btn')) == null ? '' : interp) + '</button><div class="modal-file-drop-zone"><p>' + escape((interp = t('drop a file')) == null ? '' : interp) + '</p><div></div></div><input type="file" style="display:none" class="uploader"/></section>');
+buf.push('<button class="modal-uploadBtn">' + escape((interp = t('ObjPicker upload btn')) == null ? '' : interp) + '</button><div class="modal-file-drop-zone"><p>' + escape((interp = t('drop a file')) == null ? '' : interp) + '</p><div></div></div><input type="file" style="display:none" class="uploader"/>');
 }
 return buf.join("");
 };
@@ -4608,9 +4620,9 @@ MONTH_HEADER_HEIGHT = 40;
 CELL_PADDING = 4;
 
 module.exports = LongList = (function() {
-  function LongList(viewPort$) {
+  function LongList(externalViewPort$) {
     var _this = this;
-    this.viewPort$ = viewPort$;
+    this.externalViewPort$ = externalViewPort$;
     this._unselectAll = __bind(this._unselectAll, this);
     this._clickHandler = __bind(this._clickHandler, this);
     this.getSelectedID = __bind(this.getSelectedID, this);
@@ -4618,28 +4630,38 @@ module.exports = LongList = (function() {
     this.state = {
       selected: {}
     };
+    this.viewPort$ = document.createElement('div');
+    this.viewPort$.classList.add('viewport');
+    this.externalViewPort$.appendChild(this.viewPort$);
     this.thumbs$ = document.createElement('div');
+    this.thumbs$.classList.add('thumbs');
     this.viewPort$.appendChild(this.thumbs$);
+    this.index$ = document.createElement('div');
+    this.index$.classList.add('index');
+    this.externalViewPort$.appendChild(this.index$);
     this.viewPort$.style.position = 'relative';
     this.thumbs$.style.position = 'absolute';
+    this.index$.style.position = 'fixed';
+    this.index$.style.top = 0;
+    this.index$.style.bottom = 0;
+    this.index$.style.right = 0;
     this._initBuffer();
     this._lastSelectedCol = null;
+    this.isInited = this.isPhotoArrayLoaded = false;
     Photo.getMonthdistribution(function(error, res) {
+      _this.isPhotoArrayLoaded = true;
       _this.months = res;
-      if (_this.isInited) {
+      if (_this.isInited && _this.isPhotoArrayLoaded) {
         _this._DOM_controlerInit();
-      } else {
-        _this.isPhotoArrayLoaded = true;
       }
       return true;
     });
   }
 
   LongList.prototype.init = function() {
-    if (this.isPhotoArrayLoaded) {
+    this.isInited = true;
+    if (this.isInited && this.isPhotoArrayLoaded) {
       this._DOM_controlerInit();
-    } else {
-      this.isInited = true;
     }
     return true;
   };
@@ -4749,7 +4771,7 @@ module.exports = LongList = (function() {
 
 
   LongList.prototype._DOM_controlerInit = function() {
-    var buffer, cellPadding, colWidth, counter_speed_avoided, counter_speed_ok, lastOnScroll_Y, marginLeft, monthHeaderHeight, monthTopPadding, months, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, rowHeight, safeZone, thumbDim, thumbHeight, thumbWidth, viewPortHeight, _SZ_bottomCase, _SZ_initEndPoint, _SZ_initStartPoint, _SZ_setMarginAtStart, _adaptBuffer, _computeSafeZone, _createThumbsBottom, _getBufferNextFirst, _getBufferNextLast, _insertMonthLabel, _moveBufferToBottom, _moveBufferToTop, _resizeHandler, _scrollHandler, _updateThumb,
+    var buffer, cellPadding, colWidth, counter_speed_avoided, counter_speed_ok, isDefaultToSelect, lastOnScroll_Y, marginLeft, monthHeaderHeight, monthTopPadding, months, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, rowHeight, safeZone, thumbDim, thumbHeight, thumbWidth, viewPortHeight, _SZ_bottomCase, _SZ_initEndPoint, _SZ_initStartPoint, _SZ_setMarginAtStart, _adaptBuffer, _computeSafeZone, _createThumbsBottom, _getBufferNextFirst, _getBufferNextLast, _insertMonthLabel, _moveBufferToBottom, _moveBufferToTop, _resizeHandler, _scrollHandler, _updateThumb,
       _this = this;
     months = this.months;
     buffer = this.buffer;
@@ -4780,6 +4802,7 @@ module.exports = LongList = (function() {
       firstThumbToUpdate: null,
       firstThumbRkToUpdate: null
     };
+    isDefaultToSelect = true;
     _scrollHandler = function(e) {
       if (_this.noScrollScheduled) {
         lastOnScroll_Y = _this.viewPort$.scrollTop;
@@ -4789,7 +4812,7 @@ module.exports = LongList = (function() {
     };
     this._scrollHandler = _scrollHandler;
     _resizeHandler = function() {
-      var month, nPhotos, nPhotosInMonth, nRowsInViewPort, nThumbsInSafeZoneMargin, nThumbsInViewPort, nextY, width, _i, _len, _ref;
+      var MONTH_LABEL_HEIGHT, c, d, h, indexHeight, label$, minMonthHeight, minMonthNphotos, minimumIndexHeight, month, nPhotos, nPhotosInMonth, nRowsInViewPort, nThumbsInSafeZoneMargin, nThumbsInViewPort, nextY, thumbs$Height, width, y, _i, _j, _len, _len1, _ref, _ref1, _results;
       width = _this.viewPort$.clientWidth;
       viewPortHeight = _this.viewPort$.clientWidth;
       nThumbsPerRow = Math.floor((width - cellPadding) / colWidth);
@@ -4801,6 +4824,8 @@ module.exports = LongList = (function() {
       nThumbsInSafeZone = nThumbsInSafeZoneMargin * 2 + nThumbsInViewPort;
       nextY = 0;
       nPhotos = 0;
+      minMonthHeight = Infinity;
+      minMonthNphotos = Infinity;
       _ref = _this.months;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         month = _ref[_i];
@@ -4814,9 +4839,34 @@ module.exports = LongList = (function() {
         month.lastThumbCol = (nPhotosInMonth - 1) % nThumbsPerRow;
         nextY += month.height;
         nPhotos += nPhotosInMonth;
+        minMonthHeight = Math.min(minMonthHeight, month.height);
+        minMonthNphotos = Math.min(minMonthNphotos, month.nPhotos);
       }
       _this.nPhotos = nPhotos;
-      return _this.thumbs$.style.setProperty('height', nextY + 'px');
+      thumbs$Height = nextY;
+      _this.thumbs$.style.setProperty('height', thumbs$Height + 'px');
+      MONTH_LABEL_HEIGHT = 27;
+      minimumIndexHeight = _this.months.length * MONTH_LABEL_HEIGHT;
+      if (minimumIndexHeight * 1.3 <= viewPortHeight) {
+        indexHeight = viewPortHeight;
+      } else {
+        indexHeight = 1.5 * minimumIndexHeight;
+      }
+      y = 0;
+      c = indexHeight - _this.months.length * MONTH_LABEL_HEIGHT;
+      d = nPhotos - minMonthNphotos * _this.months.length;
+      _ref1 = _this.months;
+      _results = [];
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        month = _ref1[_j];
+        label$ = $("<div style='position:absolute; top:" + y + "px; right:0px'>" + month.month + "</div>")[0];
+        h = c * (month.nPhotos - minMonthNphotos);
+        h = h / d;
+        h += MONTH_LABEL_HEIGHT;
+        y += h;
+        _results.push(_this.index$.appendChild(label$));
+      }
+      return _results;
     };
     /**
      * Adapt the buffer when the viewport has moved
@@ -5037,6 +5087,10 @@ module.exports = LongList = (function() {
         } else {
           thumb$.classList.remove('selectedThumb');
         }
+      }
+      if (isDefaultToSelect) {
+        _this._toggleOnThumb$(bufr.first.el);
+        isDefaultToSelect = false;
       }
       return console.log('======_updateThumb finished =================');
     };
@@ -5394,6 +5448,7 @@ module.exports = LongList = (function() {
     rowHeight = thumbHeight + cellPadding;
     _resizeHandler();
     _adaptBuffer();
+    isDefaultToSelect = true;
     this.thumbs$.addEventListener('click', this._clickHandler);
     return this.viewPort$.addEventListener('scroll', _scrollHandler);
   };
@@ -5761,6 +5816,7 @@ module.exports = LongList = (function() {
     viewPortTop = this.viewPort$.scrollTop;
     if (thumb$Top < viewPortTop) {
       thumb$.scrollIntoView(true);
+      this._scrollHandler();
       return this._scrollHandler();
     }
   };
@@ -7155,30 +7211,44 @@ module.exports = ObjectPickerPhotoURL = (function(_super) {
 });
 
 ;require.register("views/object-picker-upload", function(exports, require, module) {
-var ObjectPickerUpload, template,
-  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+var BaseView, ObjectPickerUpload, _ref,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-template = require('../templates/object-picker-upload');
+BaseView = require('lib/base_view');
 
-module.exports = ObjectPickerUpload = (function() {
-  function ObjectPickerUpload(objectPicker) {
+module.exports = ObjectPickerUpload = (function(_super) {
+  __extends(ObjectPickerUpload, _super);
+
+  function ObjectPickerUpload() {
     this._handleFile = __bind(this._handleFile, this);
     this._handleUploaderChange = __bind(this._handleUploaderChange, this);
     this._changePhotoFromUpload = __bind(this._changePhotoFromUpload, this);
     this.keyHandler = __bind(this.keyHandler, this);
+    _ref = ObjectPickerUpload.__super__.constructor.apply(this, arguments);
+    return _ref;
+  }
+
+  ObjectPickerUpload.prototype.template = require('../templates/object-picker-upload');
+
+  ObjectPickerUpload.prototype.tagName = "section";
+
+  ObjectPickerUpload.prototype.initialize = function() {
     var btn;
+    this.render();
     this.objectPicker = objectPicker;
     this.name = 'photoUpload';
     this.tabLabel = 'upload';
     this.tab = this._createTab();
-    this.panel = $(template())[0];
+    this.panel = this.el;
     this._bindFileDropZone();
     btn = this.panel.querySelector('.modal-uploadBtn');
     btn.addEventListener('click', this._changePhotoFromUpload);
     this.btn = btn;
     this.uploader = this.panel.querySelector('.uploader');
-    this.uploader.addEventListener('change', this._handleUploaderChange);
-  }
+    return this.uploader.addEventListener('change', this._handleUploaderChange);
+  };
 
   ObjectPickerUpload.prototype.getObject = function() {
     return this.dataURL;
@@ -7190,26 +7260,11 @@ module.exports = ObjectPickerUpload = (function() {
   };
 
   ObjectPickerUpload.prototype.keyHandler = function(e) {
-    switch (e.which) {
-      case 27:
-        e.stopPropagation();
-        this.objectPicker.onNo();
-        break;
-      case 13:
-        e.stopPropagation();
-        this.objectPicker.onYes();
-        break;
-      default:
-        return false;
-    }
     return false;
   };
 
   ObjectPickerUpload.prototype._createTab = function() {
-    var tab;
-    tab = document.createElement('div');
-    tab.textContent = this.tabLabel;
-    return tab;
+    return $("<div>" + this.tabLabel + "</div>")[0];
   };
 
   ObjectPickerUpload.prototype._bindFileDropZone = function() {
@@ -7272,7 +7327,7 @@ module.exports = ObjectPickerUpload = (function() {
 
   return ObjectPickerUpload;
 
-})();
+})(BaseView);
 });
 
 ;require.register("views/object-picker", function(exports, require, module) {
@@ -7346,9 +7401,6 @@ module.exports = PhotoPickerCroper = (function(_super) {
     this.photoURLpanel = new ObjectPickerPhotoURL();
     tabControler.addTab(this.objectPickerCont, this.tablist, this.photoURLpanel);
     this.panelsControlers[this.photoURLpanel.name] = this.photoURLpanel;
-    this.uploadPanel = new ObjectPickerUpload(this);
-    tabControler.addTab(this.objectPickerCont, this.tablist, this.uploadPanel);
-    this.panelsControlers[this.uploadPanel.name] = this.uploadPanel;
     tabControler.initializeTabs(body);
     this._listenTabsSelection();
     this._selectDefaultTab(this.imagePanel.name);
@@ -7402,20 +7454,21 @@ module.exports = PhotoPickerCroper = (function(_super) {
   };
 
   PhotoPickerCroper.prototype.onKeyStroke = function(e) {
-    if (this.state.currentStep === 'croper') {
-      if (e.which === 27) {
-        e.stopPropagation();
-        this._chooseAgain();
-      } else if (e.which === 13) {
-        e.stopPropagation();
-        this.onYes();
-        return;
-      } else {
-        return;
-      }
-    } else {
-      this.state.activePanel.keyHandler(e);
+    if (e.which === 13) {
+      e.stopPropagation();
+      this.onYes();
+      return;
     }
+    if (e.which === 27) {
+      e.stopPropagation();
+      if (this.state.currentStep === 'croper') {
+        this._chooseAgain();
+      } else {
+        this.onNo();
+      }
+      return;
+    }
+    return this.state.activePanel.keyHandler(e);
   };
 
   PhotoPickerCroper.prototype._showCropingTool = function(url) {

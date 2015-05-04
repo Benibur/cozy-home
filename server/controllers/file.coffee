@@ -1,5 +1,6 @@
 File  = require '../models/file'
 onThumbCreation = require('../../init').onThumbCreation
+fs = require('fs')
 
 ###*
  * Get given file, returns 404 if photo is not found.
@@ -92,6 +93,23 @@ module.exports.photoThumb = (req, res, next) ->
 
 
     stream.pipe res
+
+
+# module.exports.photoThumb = (req, res, next) ->
+#     which = if req.file.binary.thumb then 'thumb' else 'file'
+#     readableStream = fs.createReadStream('/mnt/documents/Dev/code/cozy-vm-2/cozy-home/test/photo-set/photo/200701/photo-200701-0.gif')
+
+#     req.on 'close', () ->
+#         console.log "reQ.on close"
+#         stream.abort()
+
+#     res.on 'close', () ->
+#         console.log "reS.on close"
+#         stream.abort()
+
+#     readableStream.pipe res
+
+
 
 
 ###*

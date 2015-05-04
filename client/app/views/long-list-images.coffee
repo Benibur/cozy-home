@@ -119,7 +119,7 @@ module.exports = class LongList
 ################################################################################
 ## PUBLIC SECTION ##
 #
-    constructor: (@viewPort$) ->
+    constructor: (@externalViewPort$) ->
         ####
         # init state
         @state =
@@ -127,12 +127,23 @@ module.exports = class LongList
             # todo BJA supprimer le @state
         ####
         # get elements (name ends with '$')
-        @thumbs$  = document.createElement('div')
+        @viewPort$ = document.createElement('div')
+        @viewPort$.classList.add('viewport')
+        @externalViewPort$.appendChild(@viewPort$)
+        @thumbs$   = document.createElement('div')
+        @thumbs$.classList.add('thumbs')
         @viewPort$.appendChild(@thumbs$)
+        @index$    = document.createElement('div')
+        @index$.classList.add('index')
+        @externalViewPort$.appendChild(@index$)
         ####
         # set position
         @viewPort$.style.position = 'relative'
         @thumbs$.style.position   = 'absolute'
+        @index$.style.position    = 'fixed'
+        @index$.style.top         = 0
+        @index$.style.bottom      = 0
+        @index$.style.right       = 0
         ####
         # controlers
         @_initBuffer()
@@ -142,25 +153,24 @@ module.exports = class LongList
         ####
         # adapt buffer to the initial geometry when we receive the array of
         # photos
+        @isInited = @isPhotoArrayLoaded = false
         Photo.getMonthdistribution (error, res) =>
             # console.log 'longlist get an answer!', res
+            @isPhotoArrayLoaded = true
             @months  = res
-            if @isInited
+            if @isInited and @isPhotoArrayLoaded
                 ####
                 # create DOM_controler
                 @_DOM_controlerInit()
-            else
-                @isPhotoArrayLoaded = true
             return true
 
 
     init : () =>
-        if @isPhotoArrayLoaded
+        @isInited = true
+        if @isInited and @isPhotoArrayLoaded
             ####
             # create DOM_controler
             @_DOM_controlerInit()
-        else
-            @isInited = true
         return true
 
 
@@ -292,6 +302,8 @@ module.exports = class LongList
             firstThumbToUpdate   : null
             firstThumbRkToUpdate : null
 
+        isDefaultToSelect = true
+
 
         _scrollHandler = (e) =>
             if @noScrollScheduled
@@ -306,19 +318,21 @@ module.exports = class LongList
             width = @viewPort$.clientWidth
             viewPortHeight = @viewPort$.clientWidth
             nThumbsPerRow = Math.floor((width-cellPadding)/colWidth)
-            marginLeft = cellPadding + Math.round((
-                width - nThumbsPerRow * colWidth - cellPadding)/2)
+            marginLeft = cellPadding +                                         \
+                         Math.round(                                           \
+                            (width - nThumbsPerRow*colWidth - cellPadding)/2   \
+                         )
             # always at least 10 rows of thumbs in the buffer
-            nRowsInViewPort         = Math.ceil(@viewPort$.clientHeight /rowHeight)
-            nRowsInSafeZoneMargin   = Math.round(COEF_SECURITY * nRowsInViewPort)
-            nThumbsInSafeZoneMargin = nRowsInSafeZoneMargin * nThumbsPerRow
-            # height reserved between two months
-            # monthHeaderHeight = 40
-            nThumbsInViewPort = nRowsInViewPort * nThumbsPerRow
-            nThumbsInSafeZone = nThumbsInSafeZoneMargin * 2 + nThumbsInViewPort
+            nRowsInViewPort       = Math.ceil(@viewPort$.clientHeight/rowHeight)
+            nRowsInSafeZoneMargin = Math.round(COEF_SECURITY * nRowsInViewPort)
+            nThumbsInSafeZoneMargin= nRowsInSafeZoneMargin * nThumbsPerRow
+            nThumbsInViewPort      = nRowsInViewPort * nThumbsPerRow
+            nThumbsInSafeZone      = nThumbsInSafeZoneMargin*2 + nThumbsInViewPort
 
             nextY   = 0
             nPhotos = 0
+            minMonthHeight  = Infinity
+            minMonthNphotos = Infinity
             for month in @months
                 nPhotosInMonth     = month.nPhotos
                 month.nRows        = Math.ceil(nPhotosInMonth / nThumbsPerRow)
@@ -330,8 +344,54 @@ module.exports = class LongList
                 month.lastThumbCol = (nPhotosInMonth-1) % nThumbsPerRow
                 nextY   += month.height
                 nPhotos += nPhotosInMonth
+                minMonthHeight = Math.min(minMonthHeight,month.height)
+                minMonthNphotos = Math.min(minMonthNphotos,month.nPhotos)
             @nPhotos = nPhotos
-            @thumbs$.style.setProperty('height', nextY + 'px')
+            thumbs$Height = nextY
+            @thumbs$.style.setProperty('height', thumbs$Height + 'px')
+
+
+
+            ##
+            # V1 basée sur la hauteur de chaque mois
+            # MONTH_LABEL_HEIGHT = 27
+            # # minimumMonthHeigh =
+            # minimumIndexHeight = @months.length * MONTH_LABEL_HEIGHT
+            # if minimumIndexHeight*1.3 <= viewPortHeight
+            #     indexHeight = viewPortHeight
+            # else
+            #     indexHeight = 1.5*minimumIndexHeight
+            # y = 0
+            # c = indexHeight - @months.length * MONTH_LABEL_HEIGHT
+            # d = thumbs$Height - minMonthHeight * @months.length
+            # for month in @months
+            #     label$ = $("<div style='position:absolute; top:#{y}px; right:0px'>#{month.month}</div>")[0]
+            #     h = c * ( month.height - minMonthHeight)
+            #     h = h / d
+            #     h += MONTH_LABEL_HEIGHT
+            #     y += h
+            #     @index$.appendChild(label$)
+
+            ##
+            # V2 basée sur le nombre de photos par mois
+            MONTH_LABEL_HEIGHT = 27
+            # minimumMonthHeigh =
+            minimumIndexHeight = @months.length * MONTH_LABEL_HEIGHT
+            if minimumIndexHeight*1.3 <= viewPortHeight
+                indexHeight = viewPortHeight
+            else
+                indexHeight = 1.5*minimumIndexHeight
+            y = 0
+            c = indexHeight - @months.length * MONTH_LABEL_HEIGHT
+            d = nPhotos - minMonthNphotos * @months.length
+            for month in @months
+                label$ = $("<div style='position:absolute; top:#{y}px; right:0px'>#{month.month}</div>")[0]
+                h = c * ( month.nPhotos - minMonthNphotos)
+                h = h / d
+                h += MONTH_LABEL_HEIGHT
+                y += h
+                @index$.appendChild(label$)
+
 
 
         ###*
@@ -587,6 +647,7 @@ module.exports = class LongList
                 fileId = file.id
                 thumb$            = thumb.el
                 thumb$.src        = "files/photo/thumbs/#{fileId}.jpg"
+                # thumb$.src        = "files/photo/thumbs/fast/#{fileId}"
                 thumb$.dataset.id = fileId
                 thumb.id          = fileId
                 thumb             = thumb.prev
@@ -607,6 +668,7 @@ module.exports = class LongList
                 fileId = file.id
                 thumb$            = thumb.el
                 thumb$.src        = "files/photo/thumbs/#{fileId}.jpg"
+                # thumb$.src        = "files/photo/thumbs/fast/#{fileId}"
                 thumb$.dataset.id = fileId
                 thumb.id          = fileId
                 thumb             = thumb.next
@@ -614,6 +676,12 @@ module.exports = class LongList
                     thumb$.classList.add('selectedThumb')
                 else
                     thumb$.classList.remove('selectedThumb')
+            ##
+            # 3/ default selection management : can not be done befor the id of
+            # the first thumb is given by the server, that's why it is done here
+            if isDefaultToSelect
+                @_toggleOnThumb$(bufr.first.el)
+                isDefaultToSelect = false
 
             console.log '======_updateThumb finished ================='
 
@@ -991,6 +1059,7 @@ module.exports = class LongList
         # Adapt the geometry and then the buffer
         _resizeHandler()
         _adaptBuffer()
+        isDefaultToSelect = true
         ####
         # bind events
         @thumbs$.addEventListener(   'click'  , @_clickHandler )
@@ -1250,6 +1319,7 @@ module.exports = class LongList
         viewPortTop = @viewPort$.scrollTop
         if thumb$Top < viewPortTop
             thumb$.scrollIntoView(true)
+            @_scrollHandler()
             @_scrollHandler()
 
 

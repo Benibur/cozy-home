@@ -63,14 +63,13 @@ module.exports = class PhotoPickerCroper extends Modal
         tabControler.addTab @objectPickerCont, @tablist, @photoURLpanel
         @panelsControlers[@photoURLpanel.name] = @photoURLpanel
         # upload panel
-        @uploadPanel = new ObjectPickerUpload(this)
-        tabControler.addTab @objectPickerCont, @tablist, @uploadPanel
-        @panelsControlers[@uploadPanel.name] = @uploadPanel
+        # @uploadPanel = new ObjectPickerUpload(this)
+        # tabControler.addTab @objectPickerCont, @tablist, @uploadPanel
+        # @panelsControlers[@uploadPanel.name] = @uploadPanel
         # init tabs
         tabControler.initializeTabs(body)
         @_listenTabsSelection()
         @_selectDefaultTab(@imagePanel.name)
-        # @imagePanel.init()
         ####
         # init the cropper
         @imgToCrop.addEventListener('load', @_onImgToCropLoaded, false)
@@ -125,19 +124,18 @@ module.exports = class PhotoPickerCroper extends Modal
     onKeyStroke: (e)->
     # overloads the modal onKeyStroke
         # console.log 'onKeyStroke', e.which, @state.activePanel
-        if @state.currentStep == 'croper'
-            if e.which is 27 # escape key => choose another photo
-                e.stopPropagation()
+        if e.which == 13 # return key => validate modal
+            e.stopPropagation()
+            @onYes()
+            return
+        if e.which is 27 # escape key => choose another photo
+            e.stopPropagation()
+            if @state.currentStep == 'croper'
                 @_chooseAgain()
-            else if e.which == 13 # return key => validate modal
-                e.stopPropagation()
-                @onYes()
-                return
-            else
-                return
-        else # @state.currentStep == 'objectPicker'
-            @state.activePanel.keyHandler(e)
-        return
+            else # @state.currentStep == 'objectPicker'
+                @.onNo()
+            return
+        @state.activePanel.keyHandler(e)
 
 
     # returns a url wich can be a path or dataUrl

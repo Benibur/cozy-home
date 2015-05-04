@@ -1,19 +1,26 @@
-template    = require '../templates/object-picker-upload'
+BaseView    = require 'lib/base_view'
 
 
-module.exports = class ObjectPickerUpload
+module.exports = class ObjectPickerUpload extends BaseView
+
+    template : require '../templates/object-picker-upload'
+    tagName  : "section"
 
 ####################
 ## PUBLIC SECTION ##
 #
-    constructor: (objectPicker) ->
+#
+    # constructor: () ->
+    #     super()
+
+    initialize: () ->
+        @render()
         # get elements
         @objectPicker = objectPicker
         @name     = 'photoUpload'
         @tabLabel = 'upload'
         @tab      = @_createTab()
-        @panel    = $(template())[0]
-        # @uploader = @panel.querySelector('.modal-uploadBtn')
+        @panel    = @el
         # bind events
         @_bindFileDropZone()
         btn = @panel.querySelector('.modal-uploadBtn')
@@ -32,15 +39,6 @@ module.exports = class ObjectPickerUpload
 
     keyHandler : (e)=>
         # console.log 'ObjectPickerUpload', e.which
-        switch e.which
-            when 27 # escape key
-                e.stopPropagation()
-                @objectPicker.onNo()
-            when 13 # return key
-                e.stopPropagation()
-                @objectPicker.onYes()
-            else
-                return false
         return false
 
 
@@ -48,9 +46,7 @@ module.exports = class ObjectPickerUpload
 ## PRIVATE SECTION ##
 #
     _createTab : () ->
-        tab = document.createElement('div')
-        tab.textContent  = @tabLabel
-        return tab
+        return $("<div>#{@tabLabel}</div>")[0]
 
 
     _bindFileDropZone: ()->
@@ -90,7 +86,9 @@ module.exports = class ObjectPickerUpload
 
     _changePhotoFromUpload: () =>
         # console.log "_changePhotoFromUpload"
-        @uploadPopupOpened = true # todo bja : pb : is not set to false if the user close the popup by clicking on the close button...
+        @uploadPopupOpened = true
+        # pb : is not set to false if the user close the popup by clicking on
+        # the close button => will close the modal too...
         @uploader.click()
 
 

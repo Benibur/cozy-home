@@ -22,7 +22,6 @@ module.exports = class ObjectPickerPhotoURL extends BaseView
         @input    = @panel.querySelector('.modal-url-input')
         @_setupInput()
 
-
     getObject : () ->
         if @url
             return @url
@@ -34,10 +33,8 @@ module.exports = class ObjectPickerPhotoURL extends BaseView
         @input.select()
         return true
 
-
     keyHandler : (e)->
         return false
-
 
 #####################
 ## PRIVATE SECTION ##
