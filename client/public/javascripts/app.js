@@ -4637,14 +4637,13 @@ module.exports = LongList = (function() {
     this.thumbs$.classList.add('thumbs');
     this.viewPort$.appendChild(this.thumbs$);
     this.index$ = document.createElement('div');
-    this.index$.classList.add('index');
+    this.index$.classList.add('long-list-index');
     this.externalViewPort$.appendChild(this.index$);
     this.viewPort$.style.position = 'relative';
-    this.thumbs$.style.position = 'absolute';
-    this.index$.style.position = 'fixed';
+    this.index$.style.position = 'absolute';
     this.index$.style.top = 0;
     this.index$.style.bottom = 0;
-    this.index$.style.right = 0;
+    this.index$.style.right = this.getScrollBarWidth() + 'px';
     this._initBuffer();
     this._lastSelectedCol = null;
     this.isInited = this.isPhotoArrayLoaded = false;
@@ -4771,7 +4770,7 @@ module.exports = LongList = (function() {
 
 
   LongList.prototype._DOM_controlerInit = function() {
-    var buffer, cellPadding, colWidth, counter_speed_avoided, counter_speed_ok, isDefaultToSelect, lastOnScroll_Y, marginLeft, monthHeaderHeight, monthTopPadding, months, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, rowHeight, safeZone, thumbDim, thumbHeight, thumbWidth, viewPortHeight, _SZ_bottomCase, _SZ_initEndPoint, _SZ_initStartPoint, _SZ_setMarginAtStart, _adaptBuffer, _computeSafeZone, _createThumbsBottom, _getBufferNextFirst, _getBufferNextLast, _insertMonthLabel, _moveBufferToBottom, _moveBufferToTop, _resizeHandler, _scrollHandler, _updateThumb,
+    var buffer, cellPadding, colWidth, counter_speed_avoided, counter_speed_ok, indexHeight, isDefaultToSelect, lastOnScroll_Y, marginLeft, monthHeaderHeight, monthTopPadding, months, nRowsInSafeZoneMargin, nThumbsInSafeZone, nThumbsPerRow, rowHeight, safeZone, thumbDim, thumbHeight, thumbWidth, thumbs$Height, viewPortHeight, _SZ_bottomCase, _SZ_initEndPoint, _SZ_initStartPoint, _SZ_setMarginAtStart, _adaptBuffer, _adaptIndex, _computeSafeZone, _createThumbsBottom, _getBufferNextFirst, _getBufferNextLast, _indexClickHandler, _insertMonthLabel, _moveBufferToBottom, _moveBufferToTop, _resizeHandler, _scrollHandler, _updateThumb,
       _this = this;
     months = this.months;
     buffer = this.buffer;
@@ -4787,6 +4786,8 @@ module.exports = LongList = (function() {
     nRowsInSafeZoneMargin = null;
     nThumbsInSafeZone = null;
     viewPortHeight = null;
+    indexHeight = null;
+    thumbs$Height = null;
     lastOnScroll_Y = null;
     safeZone = {
       firstRk: null,
@@ -4807,17 +4808,21 @@ module.exports = LongList = (function() {
       if (_this.noScrollScheduled) {
         lastOnScroll_Y = _this.viewPort$.scrollTop;
         setTimeout(_adaptBuffer, THROTTLE);
-        return _this.noScrollScheduled = false;
+        _this.noScrollScheduled = false;
+      }
+      if (_this.noIndexScrollScheduled) {
+        setTimeout(_adaptIndex, 50);
+        return _this.noIndexScrollScheduled = false;
       }
     };
     this._scrollHandler = _scrollHandler;
     _resizeHandler = function() {
-      var MONTH_LABEL_HEIGHT, c, d, h, indexHeight, label$, minMonthHeight, minMonthNphotos, minimumIndexHeight, month, nPhotos, nPhotosInMonth, nRowsInViewPort, nThumbsInSafeZoneMargin, nThumbsInViewPort, nextY, thumbs$Height, width, y, _i, _j, _len, _len1, _ref, _ref1, _results;
+      var MONTH_LABEL_HEIGHT, c, d, h, label$, minMonthHeight, minMonthNphotos, minimumIndexHeight, month, nPhotos, nPhotosInMonth, nRowsInViewPort, nThumbsInSafeZoneMargin, nThumbsInViewPort, nextY, rk, txt, width, y, _i, _j, _len, _len1, _ref, _ref1, _results;
       width = _this.viewPort$.clientWidth;
-      viewPortHeight = _this.viewPort$.clientWidth;
+      viewPortHeight = _this.viewPort$.clientHeight;
       nThumbsPerRow = Math.floor((width - cellPadding) / colWidth);
       marginLeft = cellPadding + Math.round((width - nThumbsPerRow * colWidth - cellPadding) / 2);
-      nRowsInViewPort = Math.ceil(_this.viewPort$.clientHeight / rowHeight);
+      nRowsInViewPort = Math.ceil(viewPortHeight / rowHeight);
       nRowsInSafeZoneMargin = Math.round(COEF_SECURITY * nRowsInViewPort);
       nThumbsInSafeZoneMargin = nRowsInSafeZoneMargin * nThumbsPerRow;
       nThumbsInViewPort = nRowsInViewPort * nThumbsPerRow;
@@ -4857,16 +4862,40 @@ module.exports = LongList = (function() {
       d = nPhotos - minMonthNphotos * _this.months.length;
       _ref1 = _this.months;
       _results = [];
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        month = _ref1[_j];
-        label$ = $("<div style='position:absolute; top:" + y + "px; right:0px'>" + month.month + "</div>")[0];
+      for (rk = _j = 0, _len1 = _ref1.length; _j < _len1; rk = ++_j) {
+        month = _ref1[rk];
+        txt = month.month;
+        txt = txt.slice(0, 4) + txt.slice(4);
+        label$ = $("<div style='top:" + y + "px; right:0px'>" + txt + "</div>")[0];
         h = c * (month.nPhotos - minMonthNphotos);
         h = h / d;
         h += MONTH_LABEL_HEIGHT;
         y += h;
+        label$.dataset.monthRk = rk;
         _results.push(_this.index$.appendChild(label$));
       }
       return _results;
+    };
+    _adaptIndex = function() {
+      var C, C_bis, H, td_a, td_b, vph, y;
+      y = _this.viewPort$.scrollTop;
+      H = thumbs$Height;
+      vph = viewPortHeight;
+      C = (H - vph) / (indexHeight - vph);
+      td_a = Math.round((vph * C - vph) / 2);
+      td_b = H - td_a - vph;
+      C_bis = (indexHeight - vph) / (td_b - td_a);
+      if (td_a < y && y < td_b) {
+        _this.index$.style.top = -Math.round(C_bis * (y - td_a)) + 'px';
+        return;
+      }
+      if (td_a > y) {
+        _this.index$.style.top = 0;
+        return;
+      }
+      if (td_b < y) {
+        return _this.index$.style.top = -(indexHeight - vph) + 'px';
+      }
     };
     /**
      * Adapt the buffer when the viewport has moved
@@ -4879,6 +4908,7 @@ module.exports = LongList = (function() {
     _adaptBuffer = function() {
       var bufr, nAvailable, nToCreate, nToFind, nToMove, previous_firstThumbRkToUpdate, previous_firstThumbToUpdate, speed, targetCol, targetMonthRk, targetRk, targetY, _ref, _ref1;
       _this.noScrollScheduled = true;
+      _this.noIndexScrollScheduled = true;
       speed = Math.abs(_this.viewPort$.scrollTop - lastOnScroll_Y) / viewPortHeight;
       if (speed > MAX_SPEED) {
         counter_speed_avoided += 1;
@@ -5440,6 +5470,13 @@ module.exports = LongList = (function() {
       label$.style.top = (month.y + monthTopPadding - 21) + 'px';
       return label$.style.left = '7px';
     };
+    _indexClickHandler = function(e) {
+      var monthRk;
+      monthRk = e.target.dataset.monthRk;
+      if (monthRk) {
+        return _this.viewPort$.scrollTop = _this.months[monthRk].y;
+      }
+    };
     thumbDim = this.buffer.first.el.getBoundingClientRect();
     thumbWidth = thumbDim.width;
     colWidth = thumbWidth + cellPadding;
@@ -5450,7 +5487,8 @@ module.exports = LongList = (function() {
     _adaptBuffer();
     isDefaultToSelect = true;
     this.thumbs$.addEventListener('click', this._clickHandler);
-    return this.viewPort$.addEventListener('scroll', _scrollHandler);
+    this.viewPort$.addEventListener('scroll', _scrollHandler);
+    return this.index$.addEventListener('click', _indexClickHandler);
   };
 
   LongList.prototype._clickHandler = function(e) {
@@ -5889,6 +5927,31 @@ module.exports = LongList = (function() {
       }
     }
     return th;
+  };
+
+  LongList.prototype.getScrollBarWidth = function() {
+    var inner, outer, w1, w2;
+    inner = document.createElement('p');
+    inner.style.width = "100%";
+    inner.style.height = "200px";
+    outer = document.createElement('div');
+    outer.style.position = "absolute";
+    outer.style.top = "0px";
+    outer.style.left = "0px";
+    outer.style.visibility = "hidden";
+    outer.style.width = "200px";
+    outer.style.height = "150px";
+    outer.style.overflow = "hidden";
+    outer.appendChild(inner);
+    document.body.appendChild(outer);
+    w1 = inner.offsetWidth;
+    outer.style.overflow = 'scroll';
+    w2 = inner.offsetWidth;
+    if (w1 === w2) {
+      w2 = outer.clientWidth;
+    }
+    document.body.removeChild(outer);
+    return w1 - w2;
   };
 
   return LongList;

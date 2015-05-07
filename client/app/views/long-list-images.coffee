@@ -134,16 +134,15 @@ module.exports = class LongList
         @thumbs$.classList.add('thumbs')
         @viewPort$.appendChild(@thumbs$)
         @index$    = document.createElement('div')
-        @index$.classList.add('index')
+        @index$.classList.add('long-list-index')
         @externalViewPort$.appendChild(@index$)
         ####
         # set position
         @viewPort$.style.position = 'relative'
-        @thumbs$.style.position   = 'absolute'
-        @index$.style.position    = 'fixed'
+        @index$.style.position    = 'absolute'
         @index$.style.top         = 0
         @index$.style.bottom      = 0
-        @index$.style.right       = 0
+        @index$.style.right       = @getScrollBarWidth()+'px'
         ####
         # controlers
         @_initBuffer()
@@ -287,6 +286,8 @@ module.exports = class LongList
         nRowsInSafeZoneMargin = null
         nThumbsInSafeZone     = null
         viewPortHeight        = null
+        indexHeight           = null
+        thumbs$Height         = null
         lastOnScroll_Y        = null
         safeZone =
             firstRk              : null
@@ -310,20 +311,24 @@ module.exports = class LongList
                 lastOnScroll_Y = @viewPort$.scrollTop
                 setTimeout(_adaptBuffer,THROTTLE)
                 @noScrollScheduled = false
+            if @noIndexScrollScheduled
+                setTimeout(_adaptIndex,50)
+                @noIndexScrollScheduled = false
+
 
         @_scrollHandler = _scrollHandler
 
 
         _resizeHandler= ()=>
             width = @viewPort$.clientWidth
-            viewPortHeight = @viewPort$.clientWidth
+            viewPortHeight = @viewPort$.clientHeight
             nThumbsPerRow = Math.floor((width-cellPadding)/colWidth)
             marginLeft = cellPadding +                                         \
                          Math.round(                                           \
                             (width - nThumbsPerRow*colWidth - cellPadding)/2   \
                          )
             # always at least 10 rows of thumbs in the buffer
-            nRowsInViewPort       = Math.ceil(@viewPort$.clientHeight/rowHeight)
+            nRowsInViewPort       = Math.ceil(viewPortHeight/rowHeight)
             nRowsInSafeZoneMargin = Math.round(COEF_SECURITY * nRowsInViewPort)
             nThumbsInSafeZoneMargin= nRowsInSafeZoneMargin * nThumbsPerRow
             nThumbsInViewPort      = nRowsInViewPort * nThumbsPerRow
@@ -349,33 +354,9 @@ module.exports = class LongList
             @nPhotos = nPhotos
             thumbs$Height = nextY
             @thumbs$.style.setProperty('height', thumbs$Height + 'px')
-
-
-
             ##
-            # V1 basée sur la hauteur de chaque mois
-            # MONTH_LABEL_HEIGHT = 27
-            # # minimumMonthHeigh =
-            # minimumIndexHeight = @months.length * MONTH_LABEL_HEIGHT
-            # if minimumIndexHeight*1.3 <= viewPortHeight
-            #     indexHeight = viewPortHeight
-            # else
-            #     indexHeight = 1.5*minimumIndexHeight
-            # y = 0
-            # c = indexHeight - @months.length * MONTH_LABEL_HEIGHT
-            # d = thumbs$Height - minMonthHeight * @months.length
-            # for month in @months
-            #     label$ = $("<div style='position:absolute; top:#{y}px; right:0px'>#{month.month}</div>")[0]
-            #     h = c * ( month.height - minMonthHeight)
-            #     h = h / d
-            #     h += MONTH_LABEL_HEIGHT
-            #     y += h
-            #     @index$.appendChild(label$)
-
-            ##
-            # V2 basée sur le nombre de photos par mois
+            #
             MONTH_LABEL_HEIGHT = 27
-            # minimumMonthHeigh =
             minimumIndexHeight = @months.length * MONTH_LABEL_HEIGHT
             if minimumIndexHeight*1.3 <= viewPortHeight
                 indexHeight = viewPortHeight
@@ -384,13 +365,35 @@ module.exports = class LongList
             y = 0
             c = indexHeight - @months.length * MONTH_LABEL_HEIGHT
             d = nPhotos - minMonthNphotos * @months.length
-            for month in @months
-                label$ = $("<div style='position:absolute; top:#{y}px; right:0px'>#{month.month}</div>")[0]
-                h = c * ( month.nPhotos - minMonthNphotos)
+            for month, rk in @months
+                txt = month.month
+                # txt = txt.slice(0,4) + '-' + txt.slice(4)
+                txt = txt.slice(0,4)  + txt.slice(4)
+                label$ = $("<div style='top:#{y}px; right:0px'>#{txt}</div>")[0]
+                h = c * (month.nPhotos - minMonthNphotos)
                 h = h / d
                 h += MONTH_LABEL_HEIGHT
                 y += h
+                label$.dataset.monthRk = rk
                 @index$.appendChild(label$)
+
+
+        _adaptIndex = () =>
+            y = @viewPort$.scrollTop
+            H = thumbs$Height
+            vph = viewPortHeight
+            C =  (H - vph) / (indexHeight - vph)
+            td_a = Math.round( (vph*C-vph) / 2)
+            td_b = H - td_a - vph
+            C_bis = (indexHeight - vph) / (td_b - td_a)
+            if td_a < y and y < td_b
+                @index$.style.top = - Math.round(C_bis*(y-td_a)) + 'px'
+                return
+            if td_a > y
+                @index$.style.top = 0
+                return
+            if td_b < y
+                @index$.style.top = - (indexHeight - vph) + 'px'
 
 
 
@@ -403,7 +406,9 @@ module.exports = class LongList
         counter_speed_ok      = 0
 
         _adaptBuffer = () =>
-            @noScrollScheduled = true
+            @noScrollScheduled      = true
+            @noIndexScrollScheduled = true
+
             # test speed
             speed = Math.abs(@viewPort$.scrollTop - lastOnScroll_Y) / viewPortHeight
             if speed > MAX_SPEED
@@ -1043,6 +1048,13 @@ module.exports = class LongList
             label$.style.left  = '7px'
 
 
+        _indexClickHandler = (e) =>
+            monthRk = e.target.dataset.monthRk
+            if monthRk
+                @viewPort$.scrollTop = @months[monthRk].y
+
+
+
         ####
         # Get thumbs dimensions.
         # It is possible only when the longList is inserted into the DOM, that's
@@ -1064,6 +1076,7 @@ module.exports = class LongList
         # bind events
         @thumbs$.addEventListener(   'click'  , @_clickHandler )
         @viewPort$.addEventListener( 'scroll' , _scrollHandler )
+        @index$.addEventListener(    'click'  , _indexClickHandler)
 
 
     _clickHandler: (e) =>
@@ -1390,4 +1403,30 @@ module.exports = class LongList
                     # case there is only one photo
                     return null
         return th
+
+    getScrollBarWidth : ()->
+      inner = document.createElement('p')
+      inner.style.width  = "100%"
+      inner.style.height = "200px"
+
+      outer = document.createElement('div')
+      outer.style.position   = "absolute"
+      outer.style.top        = "0px"
+      outer.style.left       = "0px"
+      outer.style.visibility = "hidden"
+      outer.style.width      = "200px"
+      outer.style.height     = "150px"
+      outer.style.overflow   = "hidden"
+      outer.appendChild (inner)
+
+      document.body.appendChild (outer)
+      w1 = inner.offsetWidth
+      outer.style.overflow = 'scroll'
+      w2 = inner.offsetWidth
+      if (w1 == w2)
+        w2 = outer.clientWidth
+
+      document.body.removeChild (outer)
+
+      return (w1 - w2)
 
