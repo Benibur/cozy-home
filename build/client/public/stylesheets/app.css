@@ -1162,6 +1162,147 @@ h4 {
 .red {
   background: #ff3713;
 }
+.permissionsLine {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: box;
+  display: flex;
+}
+.permissionsLine.header > * {
+  font-weight: normal !important;
+  color: #333 !important;
+}
+.permissionsLine.header .fake-checkbox {
+  visibility: hidden;
+}
+.permissionsLine .fake-checkbox {
+  -webkit-box-flex: 1;
+  -moz-box-flex: 1;
+  -o-box-flex: 1;
+  box-flex: 1;
+  -webkit-flex: 0;
+  -ms-flex: 0;
+  flex: 0;
+  min-width: 28px;
+  height: 20px;
+  -webkit-border-radius: 15px;
+  border-radius: 15px;
+  position: relative;
+  background: #ff3713;
+  cursor: pointer;
+  margin: auto 5px;
+}
+.permissionsLine .fake-checkbox.checked {
+  background: #16d943;
+}
+.permissionsLine .fake-checkbox.checked .circle {
+  left: 2px;
+}
+.permissionsLine .fake-checkbox .circle {
+  top: 2px;
+  right: 2px;
+  position: absolute;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  -webkit-border-radius: 20px;
+  border-radius: 20px;
+  background: #fff;
+}
+.permissionsLine .doctype-name {
+  font-weight: bold;
+  margin: auto 15px auto 5px;
+  -webkit-box-flex: 1;
+  -moz-box-flex: 1;
+  -o-box-flex: 1;
+  box-flex: 1;
+  -webkit-flex: 1;
+  -ms-flex: 1;
+  flex: 1;
+  max-width: 175px;
+}
+.permissionsLine .doctype-filter,
+.permissionsLine .doctype-date {
+  width: 45px;
+  margin: auto 5px;
+  text-align: center;
+  position: relative;
+}
+.permissionsLine .doctype-filter i,
+.permissionsLine .doctype-date i {
+  cursor: pointer;
+}
+.permissionsLine .doctype-filter i:hover,
+.permissionsLine .doctype-date i:hover {
+  opacity: 0.2;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=20)";
+  filter: alpha(opacity=20);
+}
+.permissionsLine .doctype-filter i.disable,
+.permissionsLine .doctype-date i.disable {
+  cursor: auto;
+  opacity: 0.2;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=20)";
+  filter: alpha(opacity=20);
+}
+.permissionsLine .doctype-filter:hover i,
+.permissionsLine .doctype-date:hover i {
+  color: #33a6ff;
+  opacity: 1;
+  -ms-filter: none;
+  filter: none;
+}
+.permissionsLine .doctype-use {
+  -webkit-box-flex: 1;
+  -moz-box-flex: 1;
+  -o-box-flex: 1;
+  box-flex: 1;
+  -webkit-flex: 0;
+  -ms-flex: 0;
+  flex: 0;
+  margin: auto 5px;
+  color: #808080;
+  cursor: help;
+  position: relative;
+  min-width: 75px;
+}
+.permissionsLine .doctype-use.shared {
+  color: #8b0000;
+  font-weight: bold;
+}
+.permissionsLine .doctype-filter .tooltip,
+.permissionsLine .doctype-use .tooltip,
+.permissionsLine .doctype-date .tooltip {
+  display: none;
+  position: absolute;
+  background: #32363f;
+  color: #fff;
+  z-index: 2500;
+  top: 50%;
+  left: 20px;
+  min-width: 125px;
+  font-size: 13px;
+  text-align: left;
+  padding: 5px;
+  -webkit-border-radius: 2px;
+  border-radius: 2px;
+  -webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.permissionsLine .doctype-filter:hover .tooltip,
+.permissionsLine .doctype-use:hover .tooltip,
+.permissionsLine .doctype-date:hover .tooltip {
+  display: block;
+}
+.permissionsLine .doctype-filter .tooltip,
+.permissionsLine .doctype-use .tooltip {
+  min-width: 225px;
+}
+.permissionsLine .doctype-date {
+  width: auto;
+}
 .application .permissionsLine p {
   text-shadow: none;
   color: #ff3713;

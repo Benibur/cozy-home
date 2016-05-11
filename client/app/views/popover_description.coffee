@@ -65,14 +65,68 @@ module.exports = class PopoverDescriptionView extends BaseView
             @body.append permissionsDiv
         else
             @body.append "<h5>#{t('required permissions')}</h5>"
+            headerDiv = $ "<div class='permissionsLine header'>
+                    <div class='fake-checkbox checked'><div class='circle'></div></div>
+                    <div class='doctype-name'>Doctype</div>
+                    <div class='doctype-filter'>Filtre</div>
+                    <div class='doctype-use'>Usage</div>
+                    <div class='doctype-date'>Durée</div>"
+            @body.append headerDiv
+
+            filtersType = [
+                'Accès restreint aux documents possédant le tag "Travail".'
+                'Accès restreint aux documents possédant le tag "Personnel".'
+                'Accès restreint aux documents possédant le tag "Vacances".'
+                'Accès restreint aux documents créés il y a plus de deux semaines.'
+                'Accès restreint aux documents créé il y a plus de deux semaines.'
+            ]
+
+
+            calendarsType = [
+                '31/12/2017'
+                '04/09/2017'
+                '06/06/2018'
+                'Accès pour 3 mois'
+            ]
+
             for docType, permission of @model.get("permissions")
-                permissionsDiv = $ """
-                  <div class='permissionsLine'>
-                    <strong> #{docType} </strong>
-                    <p> #{permission.description} </p>
-                  </div>
-                """
+                hasFilter = (Math.round(Math.random() * 100) + 1) <= 50
+                isShared = (Math.round(Math.random() * 100) + 1) <= 50
+                hasExpiration = (Math.round(Math.random() * 100) + 1) <= 50
+
+                if hasFilter
+                    filterTag = "<i class='fa fa-filter disable'></i>"
+                else
+                    drawFilterType = Math.round(Math.random() * (filtersType.length - 1))
+                    filterType = filtersType[drawFilterType]
+                    filterTag = "<i class='fa fa-filter'></i>
+                                 <div class='tooltip'>#{filterType}</div>"
+
+                if isShared
+                    sharedClass = ""
+                    sharedTag = "Local <div class='tooltip'>Cette donnée ne sera utilisée qu'en local et ne sortira pas de Cozy.</div>"
+                else
+                    sharedClass = "shared"
+                    sharedTag = "Partagé <div class='tooltip'>L'application demande l'autorisation d'envoyer cette donnée à l'extérieur. En savoir plus…</div>"
+
+
+                if hasExpiration
+                    calendarTag = "<i class='fa fa-calendar disable'></i>"
+                else
+                    drawCalendarType = Math.round(Math.random() * (calendarsType.length - 1))
+                    calendarType = calendarsType[drawCalendarType]
+                    calendarTag = "<i class='fa fa-calendar'></i> #{calendarType}"
+
+                permissionsDiv = $ "<div class='permissionsLine'>
+                        <div class='fake-checkbox checked'><div class='circle'></div></div>
+                        <div class='doctype-name'>#{docType}</div>
+                        <div class='doctype-filter'>#{filterTag}</div>
+                        <div class='doctype-use #{sharedClass}'>#{sharedTag}</div>
+                        <div class='doctype-date'>#{calendarTag}</div>"
                 @body.append permissionsDiv
+
+        @$('.fake-checkbox').click (event) ->
+            $(event.currentTarget).toggleClass('checked')
 
         @handleContentHeight()
         @body.slideDown()

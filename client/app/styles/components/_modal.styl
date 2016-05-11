@@ -1,5 +1,111 @@
 // MODAL
 
+// Fake advanced permission system
+.permissionsLine
+    display flex
+
+    &.header > *
+        font-weight normal !important
+        color #333 !important
+
+    &.header .fake-checkbox
+        visibility hidden
+
+    .fake-checkbox
+        flex 0
+        min-width 28px
+        height 20px
+        border-radius 15px
+        position relative
+        background red
+        cursor pointer
+        margin auto 5px
+
+        &.checked
+            background green
+            .circle
+                left 2px
+
+        .circle
+            top 2px
+            right 2px
+            position absolute
+            display inline-block
+            width 16px
+            height 16px
+            border-radius 20px
+            background white
+
+    .doctype-name
+        font-weight bold
+        margin auto 15px auto 5px
+        flex 1
+        max-width 175px
+
+    .doctype-filter
+    .doctype-date
+        width 45px
+        margin auto 5px
+        text-align center
+        position relative
+
+        i
+            cursor pointer
+
+            &:hover
+                opacity .2
+
+            &.disable
+                cursor auto
+                opacity .2
+
+        &:hover i
+            color blue
+            opacity 1
+
+
+    .doctype-use
+        flex 0
+        margin auto 5px
+        color grey
+        cursor help
+        position relative
+        min-width 75px
+
+        &.shared
+            color darkred
+            font-weight bold
+
+    .doctype-filter
+    .doctype-use
+    .doctype-date
+        .tooltip
+            display none
+            position absolute
+            background grey-08
+            color #fff
+            z-index 2500
+            top 50%
+            left 20px
+            min-width 125px
+            font-size 13px
+            text-align left
+            padding 5px
+            border-radius 2px
+            box-shadow 0 1px 3px rgba(0, 0, 0, .2)
+
+        &:hover .tooltip
+            display block
+
+    .doctype-filter .tooltip
+    .doctype-use .tooltip
+        min-width 225px
+
+    .doctype-date
+        width auto
+
+// -- end of fake advanved permission system
+
 .application
     .permissionsLine
         p

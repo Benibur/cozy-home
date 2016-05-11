@@ -1,42 +1,59 @@
-(function(/*! Brunch !*/) {
+(function() {
   'use strict';
 
-  var globals = typeof window !== 'undefined' ? window : global;
+  var globals = typeof window === 'undefined' ? global : window;
   if (typeof globals.require === 'function') return;
 
   var modules = {};
   var cache = {};
+  var has = ({}).hasOwnProperty;
 
-  var has = function(object, name) {
-    return ({}).hasOwnProperty.call(object, name);
+  var aliases = {};
+
+  var endsWith = function(str, suffix) {
+    return str.indexOf(suffix, str.length - suffix.length) !== -1;
   };
 
-  var expand = function(root, name) {
-    var results = [], parts, part;
-    if (/^\.\.?(\/|$)/.test(name)) {
-      parts = [root, name].join('/').split('/');
-    } else {
-      parts = name.split('/');
-    }
-    for (var i = 0, length = parts.length; i < length; i++) {
-      part = parts[i];
-      if (part === '..') {
-        results.pop();
-      } else if (part !== '.' && part !== '') {
-        results.push(part);
+  var unalias = function(alias, loaderPath) {
+    var start = 0;
+    if (loaderPath) {
+      if (loaderPath.indexOf('components/' === 0)) {
+        start = 'components/'.length;
+      }
+      if (loaderPath.indexOf('/', start) > 0) {
+        loaderPath = loaderPath.substring(start, loaderPath.indexOf('/', start));
       }
     }
-    return results.join('/');
+    var result = aliases[alias + '/index.js'] || aliases[loaderPath + '/deps/' + alias + '/index.js'];
+    if (result) {
+      return 'components/' + result.substring(0, result.length - '.js'.length);
+    }
+    return alias;
   };
 
+  var expand = (function() {
+    var reg = /^\.\.?(\/|$)/;
+    return function(root, name) {
+      var results = [], parts, part;
+      parts = (reg.test(name) ? root + '/' + name : name).split('/');
+      for (var i = 0, length = parts.length; i < length; i++) {
+        part = parts[i];
+        if (part === '..') {
+          results.pop();
+        } else if (part !== '.' && part !== '') {
+          results.push(part);
+        }
+      }
+      return results.join('/');
+    };
+  })();
   var dirname = function(path) {
     return path.split('/').slice(0, -1).join('/');
   };
 
   var localRequire = function(path) {
     return function(name) {
-      var dir = dirname(path);
-      var absolute = expand(dir, name);
+      var absolute = expand(dirname(path), name);
       return globals.require(absolute, path);
     };
   };
@@ -51,21 +68,26 @@
   var require = function(name, loaderPath) {
     var path = expand(name, '.');
     if (loaderPath == null) loaderPath = '/';
+    path = unalias(name, loaderPath);
 
-    if (has(cache, path)) return cache[path].exports;
-    if (has(modules, path)) return initModule(path, modules[path]);
+    if (has.call(cache, path)) return cache[path].exports;
+    if (has.call(modules, path)) return initModule(path, modules[path]);
 
     var dirIndex = expand(path, './index');
-    if (has(cache, dirIndex)) return cache[dirIndex].exports;
-    if (has(modules, dirIndex)) return initModule(dirIndex, modules[dirIndex]);
+    if (has.call(cache, dirIndex)) return cache[dirIndex].exports;
+    if (has.call(modules, dirIndex)) return initModule(dirIndex, modules[dirIndex]);
 
     throw new Error('Cannot find module "' + name + '" from '+ '"' + loaderPath + '"');
   };
 
-  var define = function(bundle, fn) {
+  require.alias = function(from, to) {
+    aliases[to] = from;
+  };
+
+  require.register = require.define = function(bundle, fn) {
     if (typeof bundle === 'object') {
       for (var key in bundle) {
-        if (has(bundle, key)) {
+        if (has.call(bundle, key)) {
           modules[key] = bundle[key];
         }
       }
@@ -74,21 +96,18 @@
     }
   };
 
-  var list = function() {
+  require.list = function() {
     var result = [];
     for (var item in modules) {
-      if (has(modules, item)) {
+      if (has.call(modules, item)) {
         result.push(item);
       }
     }
     return result;
   };
 
+  require.brunch = true;
   globals.require = require;
-  globals.require.define = define;
-  globals.require.register = define;
-  globals.require.list = list;
-  globals.require.brunch = true;
 })();
 require.register("collections/application", function(exports, require, module) {
 var Application, ApplicationCollection, BaseCollection, _ref,
@@ -11616,7 +11635,7 @@ module.exports = PopoverDescriptionView = (function(_super) {
   };
 
   PopoverDescriptionView.prototype.renderDescription = function() {
-    var description, docType, permission, permissions, permissionsDiv, _ref1;
+    var calendarTag, calendarType, calendarsType, description, docType, drawCalendarType, drawFilterType, filterTag, filterType, filtersType, hasExpiration, hasFilter, headerDiv, isShared, permission, permissions, permissionsDiv, sharedClass, sharedTag, _ref1;
     this.body.html("");
     description = t(this.model.get("description"));
     this.header.parent().append("<p class=\"line\"> " + description + " </p>");
@@ -11626,13 +11645,44 @@ module.exports = PopoverDescriptionView = (function(_super) {
       this.body.append(permissionsDiv);
     } else {
       this.body.append("<h5>" + (t('required permissions')) + "</h5>");
+      headerDiv = $("<div class='permissionsLine header'>                    <div class='fake-checkbox checked'><div class='circle'></div></div>                    <div class='doctype-name'>Doctype</div>                    <div class='doctype-filter'>Filtre</div>                    <div class='doctype-use'>Usage</div>                    <div class='doctype-date'>Durée</div>");
+      this.body.append(headerDiv);
+      filtersType = ['Accès restreint aux documents possédant le tag "Travail".', 'Accès restreint aux documents possédant le tag "Personnel".', 'Accès restreint aux documents possédant le tag "Vacances".', 'Accès restreint aux documents créés il y a plus de deux semaines.', 'Accès restreint aux documents créé il y a plus de deux semaines.'];
+      calendarsType = ['31/12/2017', '04/09/2017', '06/06/2018', 'Accès pour 3 mois'];
       _ref1 = this.model.get("permissions");
       for (docType in _ref1) {
         permission = _ref1[docType];
-        permissionsDiv = $("<div class='permissionsLine'>\n  <strong> " + docType + " </strong>\n  <p> " + permission.description + " </p>\n</div>");
+        hasFilter = (Math.round(Math.random() * 100) + 1) <= 50;
+        isShared = (Math.round(Math.random() * 100) + 1) <= 50;
+        hasExpiration = (Math.round(Math.random() * 100) + 1) <= 50;
+        if (hasFilter) {
+          filterTag = "<i class='fa fa-filter disable'></i>";
+        } else {
+          drawFilterType = Math.round(Math.random() * (filtersType.length - 1));
+          filterType = filtersType[drawFilterType];
+          filterTag = "<i class='fa fa-filter'></i>                                 <div class='tooltip'>" + filterType + "</div>";
+        }
+        if (isShared) {
+          sharedClass = "";
+          sharedTag = "Local <div class='tooltip'>Cette donnée ne sera utilisée qu'en local et ne sortira pas de Cozy.</div>";
+        } else {
+          sharedClass = "shared";
+          sharedTag = "Partagé <div class='tooltip'>L'application demande l'autorisation d'envoyer cette donnée à l'extérieur. En savoir plus…</div>";
+        }
+        if (hasExpiration) {
+          calendarTag = "<i class='fa fa-calendar disable'></i>";
+        } else {
+          drawCalendarType = Math.round(Math.random() * (calendarsType.length - 1));
+          calendarType = calendarsType[drawCalendarType];
+          calendarTag = "<i class='fa fa-calendar'></i> " + calendarType;
+        }
+        permissionsDiv = $("<div class='permissionsLine'>                        <div class='fake-checkbox checked'><div class='circle'></div></div>                        <div class='doctype-name'>" + docType + "</div>                        <div class='doctype-filter'>" + filterTag + "</div>                        <div class='doctype-use " + sharedClass + "'>" + sharedTag + "</div>                        <div class='doctype-date'>" + calendarTag + "</div>");
         this.body.append(permissionsDiv);
       }
     }
+    this.$('.fake-checkbox').click(function(event) {
+      return $(event.currentTarget).toggleClass('checked');
+    });
     this.handleContentHeight();
     return this.body.slideDown();
   };
